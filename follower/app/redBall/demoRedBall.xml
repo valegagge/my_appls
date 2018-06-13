@@ -1,0 +1,69 @@
+<application>
+<name>CER Red-Ball TRACKER</name>
+
+<!-----
+        <dependencies>
+                <port>/icub/camcalib/left/out</port>
+                <port>/iKinGazeCtrl/rpc</port>
+        </dependencies>
+ ------>
+ 
+        <module>
+                <name>imageSplitter</name>
+                <parameters></parameters>
+                <node>vale</node>
+        </module>
+
+        <module>
+                <name>iKinGazeCtrl3</name>
+                <node>vale</node>
+        </module>
+        
+         <module>
+                <name>camCalib</name>
+                <node>vale</node>
+        </module>
+             
+        <module>
+                <name>pf3dTracker</name>
+                <node>vale</node>
+        </module>
+   
+        <module>
+                <name>demoRedBall</name>
+                <node>vale</node>
+        </module>
+  
+        <module>
+                <name>yarpview</name>
+                <parameters>--name /PF3DTracker_viewer --x 320 --y 0 --p 50 --compact</parameters>
+                <node>vale</node>
+        </module>
+  
+        <connection>
+                <from>/SIM_CER_ROBOT/cam/cameras:o</from>
+                <to>/imageSplitter/input:i</to>
+                <protocol>udp</protocol>
+        </connection>
+        
+        <connection>
+                <from>/imageSplitter/left:o</from>
+                <to>/pf3dTracker/video:i</to>
+                <protocol>udp</protocol>
+        </connection>
+
+        <connection>
+                <from>/pf3dTracker/video:o</from>
+                <to>/PF3DTracker_viewer</to>
+                <protocol>udp</protocol>
+        </connection>
+
+        <connection>
+                <from>/pf3dTracker/data:o</from>
+                <to>/demoRedBall/trackTarget:i</to>
+                <protocol>udp</protocol>
+        </connection>
+
+
+
+</application>
