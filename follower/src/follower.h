@@ -6,6 +6,8 @@
 #include <yarp/os/LogStream.h>
 #include <yarp/os/BufferedPort.h>
 #include <yarp/os/Bottle.h>
+#include <yarp/dev/PolyDriver.h>
+#include <yarp/dev/IFrameTransform.h>
 
 class Follower:public yarp::os::RFModule
 {
@@ -26,9 +28,16 @@ public:
 
     bool close();
 private:
+
+    yarp::os::IFrameTransform* m_transformClient;
+    yarp::dev::PolyDriver      m_driver;
+
+
     yarp::os::BufferedPort<yarp::os::Bottle>  m_port_commands_output;
 
     void sendOutput();
+    bool initTransformClient(void);
+    bool get
 
 
 };

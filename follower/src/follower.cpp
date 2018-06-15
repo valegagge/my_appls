@@ -65,6 +65,10 @@ bool Follower::respond(const Bottle& command, Bottle& reply)
     return true;
 }
 
+
+
+
+
 // Configure function. Receive a previously initialized
 // resource finder object. Use it to configure your module.
 // If you are migrating from the old module, this is the function
@@ -72,6 +76,11 @@ bool Follower::respond(const Bottle& command, Bottle& reply)
 bool Follower::configure(yarp::os::ResourceFinder &rf)
 {
     m_port_commands_output.open("/follower/control:o");
+
+    if(!initTransformClient())
+        return false;
+
+
     return true;
 }
 // Interrupt function.
@@ -85,12 +94,47 @@ bool Follower::interruptModule()
 // Close function, to perform cleanup.
 bool Follower::close()
 {
+
+    m_driver.close();
     // optional, close port explicitly
     cout << "Calling close function\n";
     return true;
 }
 
 
-Follower::Follower()
+Follower::Follower():m_transformClient(nullptr)
 {;}
 Follower::~Follower(){;}
+
+
+//------------------------------------------------
+// private function
+//------------------------------------------------
+
+bool Follower::initTransformClient(void)
+{
+    // Prepare properties for the FrameTransformClient
+    yarp::os::Property propTfClient;
+    propTfClient.put("device", "transformClient");
+    propTfClient.put("local", "/transformClient-follower");
+    propTfClient.put("remote", "/transformServer");
+
+    // Try to open the driver
+    bool ok_open = m_driver.open(propTfClient);
+    if (!ok_open)
+    {
+        yError() << "Unable to open the FrameTransformClient driver.";
+        return false;
+    }
+
+    // Try to retrieve the view
+    bool ok_view = m_driver.view(m_transformClient);
+    if (!ok_view || m_transformClient == 0)
+    {
+        yError() << "Unable to retrieve the FrameTransformClient view.";
+        return false;
+    }
+
+    //from now I can use m_transformClient
+    return true;
+}
