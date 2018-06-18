@@ -26,3 +26,5 @@ public:
     void release_buffer(T* buff);
     void printBuffers(void);
 };
+
+#include "BuffersHelper-inl.h"

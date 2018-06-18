@@ -6,8 +6,6 @@
  * BSD-3-Clause license. See the accompanying LICENSE file for details.
  */
 
-#include "BuffersHelper.h"
-
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
 
@@ -103,5 +101,3 @@ std::size_t BuffersHelper<T>::get_buffers_size(void)
     return nj;
 }
 
-
-template class BuffersHelper <int>;
