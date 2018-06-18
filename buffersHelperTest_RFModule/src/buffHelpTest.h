@@ -33,16 +33,17 @@ public:
 
     void run(void)
     {
-        int *myBuff= buffsHelper->get_buffer();
-        for(int i=0; i<buffsHelper->get_buffers_size(); i++)
+        Buffer<int> b;
+        int *myBuff= buffsHelper->getBuffer(b);
+        for(int i=0; i<b.getSize(); i++)
             myBuff[i] = count;
-        yWarning() << "TH " << id << ": I'm using buff " << myBuff;
+        yWarning() << "TH " << id << ": I'm using buff " << myBuff << "key=" << b.getKey();
         count++;
         if(count==max)
             count=min;
 
-        buffsHelper->release_buffer(myBuff);
-        yWarning() << "TH " << id << ": I released buff " << myBuff;
+        buffsHelper->releaseBuffer(b);
+        yWarning() << "TH " << id << ": I released buff " << myBuff << "key=" << b.getKey();
     }
 };
 

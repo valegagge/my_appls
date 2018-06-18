@@ -12,32 +12,45 @@
 using namespace std;
 
 template <typename T>
-BuffersHelper<T>::BuffersHelper(int joints_num, size_t initial_size)
+BuffersHelper<T>::BuffersHelper(int numOfElements, std::size_t initialNumOfBuffers)
 {
-    nj = joints_num;
-    for (size_t i = 0; i < initial_size; i++)
+    m_numElem = numOfElements;
+    m_buffers.resize(0);
+
+    for (size_t i = 0; i < initialNumOfBuffers; i++)
     {
-        T* buff = new T [joints_num];
+        T* buff = new T [numOfElements];
         m_buffers.push_back(buff);
     }
-    m_usedBuffers.resize(initial_size, false);
+    m_usedBuffers.resize(initialNumOfBuffers, false);
+    m_firstFreeBuff = 0;
 }
 
+
+
+
 template <typename T>
-T* BuffersHelper<T>::get_buffer(void)
+T* BuffersHelper<T>::getBuffer(Buffer<T> &b)
 {
     m_mutex.lock();
     //get fisrt  free buffer
-    int i;
-    for(i=0; i< m_buffers.size(); i++)
-        if(false == m_usedBuffers[i])
-            break;
-
+    uint32_t i;
     T* buff;
-    //if all buffers are used, I create new one and return it
-    if(i>=m_buffers.size())
+    bool needNewBuff = false;
+    if(false == m_usedBuffers[m_firstFreeBuff])
     {
-        buff = new T[nj];
+        //you are lucky
+        i = m_firstFreeBuff;
+    }
+    else
+    {
+        needNewBuff = searchFirstFreeBuffer(i);
+    }
+
+    //if all buffers are used, I create new one and return it
+    if(needNewBuff)
+    {
+        buff = new T[m_numElem];
         if(nullptr == buff)
         {
             yError() << "no more memory!!";
@@ -46,18 +59,24 @@ T* BuffersHelper<T>::get_buffer(void)
         m_buffers.push_back(buff);
         m_usedBuffers.push_back(true);
         yDebug() << "I need to create a new buffer. Now size is " << m_buffers.size();
+        i = m_buffers.size()-1;
     }
     else //use the first free buffer
     {
         buff = m_buffers[i];
         m_usedBuffers[i] = true;
-    }
 
+    }
+    b.key=i;
+    b.dataPtr=buff;
+    b.numOfElements = m_numElem;
     m_mutex.unlock();
     return buff;
 }
+
+
 template <typename T>
-void BuffersHelper<T>::release_buffer(T* buff)
+void BuffersHelper<T>::releaseBuffer(T* buff)
 {
     m_mutex.lock();
     int i;
@@ -75,6 +94,26 @@ void BuffersHelper<T>::release_buffer(T* buff)
     }
     m_mutex.unlock();
 }
+
+
+template <typename T>
+void BuffersHelper<T>::releaseBuffer(Buffer<T> &b)
+{
+    m_mutex.lock();
+
+    if(b.key>=m_buffers.size())
+    {
+        yError() << "error in deallocation!!";
+    }
+
+    m_usedBuffers[b.key] = false;
+    m_firstFreeBuff = b.key;
+    m_mutex.unlock();
+}
+
+
+
+
 
 template <typename T>
 void BuffersHelper<T>::printBuffers(void)
@@ -96,8 +135,8 @@ BuffersHelper<T>::~BuffersHelper()
 }
 
 template <typename T>
-std::size_t BuffersHelper<T>::get_buffers_size(void)
+std::size_t BuffersHelper<T>::getBufferSize(void)
 {
-    return nj;
+    return m_numElem;
 }
 

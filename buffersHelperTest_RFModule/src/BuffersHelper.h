@@ -10,20 +10,58 @@
 #include <vector>
 
 template <typename T>
+class BuffersHelper;
+
+template <typename T>
+class Buffer
+{
+friend class BuffersHelper<T>;
+
+private:
+    uint32_t key;
+    T* dataPtr;
+    uint32_t numOfElements;
+    //uint32_t numOfByte;//serve?
+public:
+    Buffer():key(0), dataPtr(nullptr), numOfElements(0){;}
+    uint32_t getKey() {return key;}
+    T* getData() {return dataPtr;}
+    uint32_t getSize() {return numOfElements;}
+};
+
+
+
+
+
+template <typename T>
 class BuffersHelper
 {
 private:
     yarp::os::Mutex m_mutex;
-    std::vector<T *> m_buffers;
+    std::vector<T*> m_buffers;
     std::vector<bool> m_usedBuffers;
-    std::size_t nj;
+    std::size_t m_numElem;
+    uint32_t m_firstFreeBuff; //euristic
+
+    inline bool searchFirstFreeBuffer(uint32_t &index)
+    {
+        for(uint32_t i=0; i< m_buffers.size(); i++)
+            if(false == m_usedBuffers[i])
+            {
+                index = i;
+                return true;
+            }
+
+        return false;
+    }
 
 public:
-    explicit BuffersHelper(int joints_num, std::size_t initial_size=3);
+    explicit BuffersHelper(int numOfElements, std::size_t initialNumOfBuffers=3);
     ~BuffersHelper();
-    T* get_buffer(void);
-    std::size_t get_buffers_size(void);
-    void release_buffer(T* buff);
+    T* getBuffer(Buffer<T> &b);
+    std::size_t getBufferSize(void);
+    void releaseBuffer(T* buff);
+    void releaseBuffer(Buffer<T> &b);
     void printBuffers(void);
 };
 
