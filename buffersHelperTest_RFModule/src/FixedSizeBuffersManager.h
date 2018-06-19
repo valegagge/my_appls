@@ -10,12 +10,12 @@
 #include <vector>
 
 template <typename T>
-class BuffersHelper;
+class FixedSizeBuffersManager;
 
 template <typename T>
 class Buffer
 {
-friend class BuffersHelper<T>;
+friend class FixedSizeBuffersManager<T>;
 
 private:
     uint32_t key;
@@ -34,7 +34,7 @@ public:
 
 
 template <typename T>
-class BuffersHelper
+class FixedSizeBuffersManager
 {
 private:
     yarp::os::Mutex m_mutex;
@@ -56,8 +56,8 @@ private:
     }
 
 public:
-    explicit BuffersHelper(int numOfElements, std::size_t initialNumOfBuffers=3);
-    ~BuffersHelper();
+    explicit FixedSizeBuffersManager(uint32_t numOfElements, std::size_t initialNumOfBuffers=3);
+    ~FixedSizeBuffersManager();
     T* getBuffer(Buffer<T> &b);
     std::size_t getBufferSize(void);
     void releaseBuffer(T* buff);
@@ -65,4 +65,4 @@ public:
     void printBuffers(void);
 };
 
-#include "BuffersHelper-inl.h"
+#include "FixedSizeBuffersManager-inl.h"

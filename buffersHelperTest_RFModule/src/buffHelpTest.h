@@ -2,7 +2,7 @@
 
 #include <yarp/os/RFModule.h>
 #include <yarp/os/RateThread.h>
-#include "BuffersHelper.h"
+#include "FixedSizeBuffersManager.h"
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
 
@@ -10,11 +10,11 @@ class myThread : public yarp::os::RateThread
 {
 public:
 
-    BuffersHelper<int> * buffsHelper;
+    FixedSizeBuffersManager<int> * buffsHelper;
     int min,max, count, id;
 
     myThread():RateThread(100){;}
-    void init(BuffersHelper<int> * buffs, int num)
+    void init(FixedSizeBuffersManager<int> * buffs, int num)
     {
         buffsHelper = buffs;
         min=10*num;
@@ -23,7 +23,7 @@ public:
         setRate(10+4*num);
         id = num;
     }
-    myThread(BuffersHelper<int> * buffs, int num):RateThread(100+8*num)
+    myThread(FixedSizeBuffersManager<int> * buffs, int num):RateThread(100+8*num)
     {
         buffsHelper = buffs;
         min=10*num;
@@ -71,7 +71,7 @@ public:
 
     bool close();
 private:
-    BuffersHelper<int> buffsHelper;
+    FixedSizeBuffersManager<int> buffsHelper;
     myThread threadList[NUM_THREADS];
 
 

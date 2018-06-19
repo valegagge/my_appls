@@ -9,10 +9,9 @@
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
 
-using namespace std;
 
 template <typename T>
-BuffersHelper<T>::BuffersHelper(int numOfElements, std::size_t initialNumOfBuffers)
+FixedSizeBuffersManager<T>::FixedSizeBuffersManager(uint32_t numOfElements, std::size_t initialNumOfBuffers)
 {
     m_numElem = numOfElements;
     m_buffers.resize(0);
@@ -30,38 +29,40 @@ BuffersHelper<T>::BuffersHelper(int numOfElements, std::size_t initialNumOfBuffe
 
 
 template <typename T>
-T* BuffersHelper<T>::getBuffer(Buffer<T> &b)
+T* FixedSizeBuffersManager<T>::getBuffer(Buffer<T> &b)
 {
     m_mutex.lock();
     //get fisrt  free buffer
     uint32_t i;
     T* buff;
-    bool needNewBuff = false;
+    bool needNewBuff = true;
     if(false == m_usedBuffers[m_firstFreeBuff])
     {
         //you are lucky
         i = m_firstFreeBuff;
+        needNewBuff = false;
     }
     else
     {
-        //needNewBuff = searchFirstFreeBuffer(i);
-        for(i=0; i< m_buffers.size(); i++)
+//         needNewBuff = searchFirstFreeBuffer(i);
+        for(std::size_t p=0; p< m_buffers.size(); p++)
         {
-            if(false == m_usedBuffers[i])
+            if(false == m_usedBuffers[p])
             {
+                i = p;
+                needNewBuff = false;
                 break;
             }
         }
-        if(i>=m_buffers.size())
-        {
-            needNewBuff = true;
-        }
-
     }
 
     //if all buffers are used, I create new one and return it
     if(needNewBuff)
     {
+        for(std::size_t x=0; x<m_buffers.size(); x++)
+            yError() << "buff["<< x<< "]: addr = " << m_buffers[x] << "; it is used?" << m_usedBuffers[x] ;
+
+
         buff = new T[m_numElem];
         if(nullptr == buff)
         {
@@ -89,10 +90,10 @@ T* BuffersHelper<T>::getBuffer(Buffer<T> &b)
 
 
 template <typename T>
-void BuffersHelper<T>::releaseBuffer(T* buff)
+void FixedSizeBuffersManager<T>::releaseBuffer(T* buff)
 {
     m_mutex.lock();
-    int i;
+    std::size_t i;
     for(i=0; i< m_buffers.size(); i++)
     {
         if(m_buffers[i] == buff)
@@ -110,7 +111,7 @@ void BuffersHelper<T>::releaseBuffer(T* buff)
 
 
 template <typename T>
-void BuffersHelper<T>::releaseBuffer(Buffer<T> &b)
+void FixedSizeBuffersManager<T>::releaseBuffer(Buffer<T> &b)
 {
     m_mutex.lock();
 
@@ -130,17 +131,17 @@ void BuffersHelper<T>::releaseBuffer(Buffer<T> &b)
 
 
 template <typename T>
-void BuffersHelper<T>::printBuffers(void)
+void FixedSizeBuffersManager<T>::printBuffers(void)
 {
     m_mutex.lock();
-    for(int i=0; i<m_buffers.size(); i++)
+    for(std::size_t i=0; i<m_buffers.size(); i++)
         yDebug() << "buff["<< i<< "]: addr = " << m_buffers[i] << "; it is used?" << m_usedBuffers[i] ;
 
     m_mutex.unlock();
 }
 
 template <typename T>
-BuffersHelper<T>::~BuffersHelper()
+FixedSizeBuffersManager<T>::~FixedSizeBuffersManager()
 {
     for (size_t i = 0; i < m_buffers.size(); i++)
     {
@@ -149,7 +150,7 @@ BuffersHelper<T>::~BuffersHelper()
 }
 
 template <typename T>
-std::size_t BuffersHelper<T>::getBufferSize(void)
+std::size_t FixedSizeBuffersManager<T>::getBufferSize(void)
 {
     return m_numElem;
 }
