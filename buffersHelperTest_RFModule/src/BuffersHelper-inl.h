@@ -44,7 +44,19 @@ T* BuffersHelper<T>::getBuffer(Buffer<T> &b)
     }
     else
     {
-        needNewBuff = searchFirstFreeBuffer(i);
+        //needNewBuff = searchFirstFreeBuffer(i);
+        for(i=0; i< m_buffers.size(); i++)
+        {
+            if(false == m_usedBuffers[i])
+            {
+                break;
+            }
+        }
+        if(i>=m_buffers.size())
+        {
+            needNewBuff = true;
+        }
+
     }
 
     //if all buffers are used, I create new one and return it
@@ -58,7 +70,7 @@ T* BuffersHelper<T>::getBuffer(Buffer<T> &b)
         }
         m_buffers.push_back(buff);
         m_usedBuffers.push_back(true);
-        yDebug() << "I need to create a new buffer. Now size is " << m_buffers.size();
+        yError() << "I need to create a new buffer. Now size is " << m_buffers.size() << "pointer is " << buff;
         i = m_buffers.size()-1;
     }
     else //use the first free buffer
@@ -70,6 +82,7 @@ T* BuffersHelper<T>::getBuffer(Buffer<T> &b)
     b.key=i;
     b.dataPtr=buff;
     b.numOfElements = m_numElem;
+    //yInfo() << "getBuffer: key=" << b.key << " ptr=" << b.dataPtr;
     m_mutex.unlock();
     return buff;
 }
@@ -108,6 +121,7 @@ void BuffersHelper<T>::releaseBuffer(Buffer<T> &b)
 
     m_usedBuffers[b.key] = false;
     m_firstFreeBuff = b.key;
+    //yInfo() << "ReleaseBuffer: key=" << b.key << " ptr=" << b.dataPtr;
     m_mutex.unlock();
 }
 

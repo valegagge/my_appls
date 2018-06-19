@@ -45,10 +45,10 @@ private:
 
     inline bool searchFirstFreeBuffer(uint32_t &index)
     {
-        for(uint32_t i=0; i< m_buffers.size(); i++)
-            if(false == m_usedBuffers[i])
+        for(uint32_t p=0; p< m_buffers.size(); p++)
+            if(false == m_usedBuffers[p])
             {
-                index = i;
+                index = p;
                 return true;
             }
 
