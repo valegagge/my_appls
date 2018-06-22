@@ -29,15 +29,26 @@ public:
     bool close();
 private:
 
-    yarp::os::IFrameTransform* m_transformClient;
+    yarp::dev::IFrameTransform* m_transformClient;
     yarp::dev::PolyDriver      m_driver;
 
+     const std::string target_frame_id = "mobile_base_body_link"; //"head_leopard_right";
+    const std::string source_frame_id = "head_leopard_left";
 
-    yarp::os::BufferedPort<yarp::os::Bottle>  m_port_commands_output;
+    yarp::os::BufferedPort<yarp::os::Bottle> m_inputPort; //From this port I receive the data from Pf3dtraker
 
-    void sendOutput();
+    yarp::os::BufferedPort<yarp::os::Bottle>  m_port_commands_output;//test only!!!used in sendOutput
+    void sendOutput(); //only for test. it simulates joystick
+
+    void followBall(); //core function call in updateModule.
+
+    //get transform matrix from left camera to mobile base. Pf3dtraker use the left camera.
+    bool getMatrix(yarp::sig::Matrix &transform);
+
+    bool getBallPointTrasformed(yarp::sig::Vector &pointBallInput, yarp::sig::Vector &pointBallOutput);
+
+
     bool initTransformClient(void);
-    bool get
 
 
 };

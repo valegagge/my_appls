@@ -4,6 +4,9 @@
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
 #include <yarp/os/Stamp.h>
+#include <yarp/sig/Matrix.h>
+#include <yarp/sig/Vector.h>
+#include <yarp/os/Bottle.h>
 
 #include "follower.h"
 using namespace std;
@@ -15,7 +18,7 @@ using namespace yarp::os;
 double Follower::getPeriod()
 {
     // module periodicity (seconds), called implicitly by the module.
-    return 0.5;
+    return 5;
 }
 void Follower::sendOutput()
 {
@@ -51,9 +54,80 @@ void Follower::sendOutput()
 // This is our main function. Will be called periodically every getPeriod() seconds
 bool Follower::updateModule()
 {
-    sendOutput();
+//    sendOutput();
+    followBall();
    return true;
 }
+
+void Follower::followBall(void)
+{
+    //1. get the transform matrix
+    //this step is not necessary... we use it only for debug purpose
+    yarp::sig::Matrix transform;
+    if(!getMatrix(transform))
+        return;
+
+    //2. read ball poosition
+    Bottle *b = m_inputPort.read();
+
+//     yDebug() << "Vedo pallina " << b->get(6).asDouble();
+//     yDebug() << "pos pallina" << b->get(0).asDouble() << b->get(1).asDouble() << b->get(2).asDouble();
+    bool ballIsTracked = (b->get(6).asDouble() == 1.0) ? true : false;
+
+    if(!ballIsTracked)
+    {
+        yError() << "FOLLOWER: I can't see the ball!!!";
+        return;
+    }
+
+
+
+
+
+
+    //3. transform the ball-point from camera point of view to base point of view.
+    yarp::sig::Vector pointBallInput(3), pointBallOutput;
+    pointBallInput[0] = b->get(0).asDouble();
+    pointBallInput[1] = b->get(1).asDouble();
+    pointBallInput[2] = b->get(2).asDouble();
+
+    if(!getBallPointTrasformed(pointBallInput, pointBallOutput))
+        return;
+
+}
+bool Follower::getMatrix(yarp::sig::Matrix &transform)
+{
+    bool res = m_transformClient->getTransform (target_frame_id, source_frame_id, transform);
+    if(res)
+    {
+        yDebug() << "FOLLOWER: i get the transform matrix:"; // << transform.toString();
+
+        std::cout << transform.toString() << std::endl << std::endl;
+    }
+    else
+    {
+        yError() << "FOLLOWER: error in getting transform matrix";
+    }
+
+    return res;
+}
+
+bool Follower::getBallPointTrasformed(yarp::sig::Vector &pointBallInput, yarp::sig::Vector &pointBallOutput)
+{
+    bool res = m_transformClient->transformPoint(target_frame_id, source_frame_id, pointBallInput, pointBallOutput);
+    if(res)
+    {
+        yDebug() << "FOLLOWER: point (" << pointBallInput.toString() << ") has been transformed in (" << pointBallOutput.toString() << ")";
+    }
+    else
+    {
+        yError() << "FOLLOWER: error in getting transform point";
+    }
+
+    return res;
+}
+
+
 // Message handler. Just echo all received messages.
 bool Follower::respond(const Bottle& command, Bottle& reply)
 {
@@ -77,6 +151,8 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
 {
     m_port_commands_output.open("/follower/control:o");
 
+    m_inputPort.open("/follower/ballPoint:i");
+
     if(!initTransformClient())
         return false;
 
@@ -89,6 +165,10 @@ bool Follower::interruptModule()
 
     m_port_commands_output.interrupt();
     m_port_commands_output.close();
+
+    m_inputPort.interrupt();
+    m_inputPort.close();
+
     return true;
 }
 // Close function, to perform cleanup.
