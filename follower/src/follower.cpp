@@ -4,6 +4,9 @@
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
 #include <yarp/os/Stamp.h>
+#include <yarp/sig/Matrix.h>
+#include <yarp/sig/Vector.h>
+#include <yarp/os/Bottle.h>
 
 #include "follower.h"
 using namespace std;
@@ -15,7 +18,7 @@ using namespace yarp::os;
 double Follower::getPeriod()
 {
     // module periodicity (seconds), called implicitly by the module.
-    return 0.5;
+    return 5;
 }
 void Follower::sendOutput()
 {
@@ -51,9 +54,82 @@ void Follower::sendOutput()
 // This is our main function. Will be called periodically every getPeriod() seconds
 bool Follower::updateModule()
 {
-    sendOutput();
+//    sendOutput();
+    followBall();
    return true;
 }
+
+void Follower::followBall(void)
+{
+    //1. get the transform matrix
+    //this step is not necessary... we use it only for debug purpose
+    yarp::sig::Matrix transform;
+    if(!getMatrix(transform))
+    {
+        yError() << "FOLLOWER: cannot get the matrix";
+        return;
+    }
+
+    //2. read ball poosition
+    Bottle *b = m_inputPort.read();
+
+//     yDebug() << "Vedo pallina " << b->get(6).asDouble();
+//     yDebug() << "pos pallina" << b->get(0).asDouble() << b->get(1).asDouble() << b->get(2).asDouble();
+    bool ballIsTracked = (b->get(6).asDouble() == 1.0) ? true : false;
+
+    if(!ballIsTracked)
+    {
+        yError() << "FOLLOWER: I can't see the ball!!!";
+        return;
+    }
+
+    
+    //3. transform the ball-point from camera point of view to base point of view.
+    yarp::sig::Vector pointBallInput(3), pointBallOutput;
+    pointBallInput[0] = b->get(0).asDouble();
+    pointBallInput[1] = b->get(1).asDouble();
+    pointBallInput[2] = b->get(2).asDouble();
+
+    if(!getBallPointTrasformed(pointBallInput, pointBallOutput))
+    {
+        yError() << "FOLLOWER: error in getBallPointTrasformed()";
+        return;
+    }
+
+}
+bool Follower::getMatrix(yarp::sig::Matrix &transform)
+{
+    bool res = m_transformClient->getTransform (target_frame_id, source_frame_id, transform);
+    if(res)
+    {
+        yDebug() << "FOLLOWER: i get the transform matrix:"; // << transform.toString();
+
+        std::cout << transform.toString() << std::endl << std::endl;
+    }
+    else
+    {
+        yError() << "FOLLOWER: error in getting transform matrix";
+    }
+
+    return res;
+}
+
+bool Follower::getBallPointTrasformed(yarp::sig::Vector &pointBallInput, yarp::sig::Vector &pointBallOutput)
+{
+    bool res = m_transformClient->transformPoint(target_frame_id, source_frame_id, pointBallInput, pointBallOutput);
+    if(res)
+    {
+        yDebug() << "FOLLOWER: point (" << pointBallInput.toString() << ") has been transformed in (" << pointBallOutput.toString() << ")";
+    }
+    else
+    {
+        yError() << "FOLLOWER: error in getting transform point";
+    }
+
+    return res;
+}
+
+
 // Message handler. Just echo all received messages.
 bool Follower::respond(const Bottle& command, Bottle& reply)
 {
@@ -65,6 +141,10 @@ bool Follower::respond(const Bottle& command, Bottle& reply)
     return true;
 }
 
+
+
+
+
 // Configure function. Receive a previously initialized
 // resource finder object. Use it to configure your module.
 // If you are migrating from the old module, this is the function
@@ -72,6 +152,13 @@ bool Follower::respond(const Bottle& command, Bottle& reply)
 bool Follower::configure(yarp::os::ResourceFinder &rf)
 {
     m_port_commands_output.open("/follower/control:o");
+
+    m_inputPort.open("/follower/ballPoint:i");
+
+    if(!initTransformClient())
+        return false;
+
+
     return true;
 }
 // Interrupt function.
@@ -80,17 +167,56 @@ bool Follower::interruptModule()
 
     m_port_commands_output.interrupt();
     m_port_commands_output.close();
+
+    m_inputPort.interrupt();
+    m_inputPort.close();
+
     return true;
 }
 // Close function, to perform cleanup.
 bool Follower::close()
 {
+
+    m_driver.close();
     // optional, close port explicitly
     cout << "Calling close function\n";
     return true;
 }
 
 
-Follower::Follower()
+Follower::Follower():m_transformClient(nullptr)
 {;}
 Follower::~Follower(){;}
+
+
+//------------------------------------------------
+// private function
+//------------------------------------------------
+
+bool Follower::initTransformClient(void)
+{
+    // Prepare properties for the FrameTransformClient
+    yarp::os::Property propTfClient;
+    propTfClient.put("device", "transformClient");
+    propTfClient.put("local", "/transformClient-follower");
+    propTfClient.put("remote", "/transformServer");
+
+    // Try to open the driver
+    bool ok_open = m_driver.open(propTfClient);
+    if (!ok_open)
+    {
+        yError() << "Unable to open the FrameTransformClient driver.";
+        return false;
+    }
+
+    // Try to retrieve the view
+    bool ok_view = m_driver.view(m_transformClient);
+    if (!ok_view || m_transformClient == 0)
+    {
+        yError() << "Unable to retrieve the FrameTransformClient view.";
+        return false;
+    }
+
+    //from now I can use m_transformClient
+    return true;
+}

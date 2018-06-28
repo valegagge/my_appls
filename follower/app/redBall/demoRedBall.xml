@@ -60,7 +60,7 @@
 
         <connection>
                 <from>/pf3dTracker/data:o</from>
-                <to>/demoRedBall/trackTarget:i</to>
+                <to>/follower/ballPoint:i</to>
                 <protocol>udp</protocol>
         </connection>
 
