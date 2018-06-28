@@ -65,7 +65,10 @@ void Follower::followBall(void)
     //this step is not necessary... we use it only for debug purpose
     yarp::sig::Matrix transform;
     if(!getMatrix(transform))
+    {
+        yError() << "FOLLOWER: cannot get the matrix";
         return;
+    }
 
     //2. read ball poosition
     Bottle *b = m_inputPort.read();
@@ -80,11 +83,7 @@ void Follower::followBall(void)
         return;
     }
 
-
-
-
-
-
+    
     //3. transform the ball-point from camera point of view to base point of view.
     yarp::sig::Vector pointBallInput(3), pointBallOutput;
     pointBallInput[0] = b->get(0).asDouble();
@@ -92,7 +91,10 @@ void Follower::followBall(void)
     pointBallInput[2] = b->get(2).asDouble();
 
     if(!getBallPointTrasformed(pointBallInput, pointBallOutput))
+    {
+        yError() << "FOLLOWER: error in getBallPointTrasformed()";
         return;
+    }
 
 }
 bool Follower::getMatrix(yarp::sig::Matrix &transform)

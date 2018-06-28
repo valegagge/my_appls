@@ -32,9 +32,16 @@ private:
     yarp::dev::IFrameTransform* m_transformClient;
     yarp::dev::PolyDriver      m_driver;
 
-     const std::string target_frame_id = "mobile_base_body_link"; //"head_leopard_right";
+#if 0
+    // correct but maybe .. i try to invert (as suggested by silvio)
+    const std::string target_frame_id = "base_link"; //"head_leopard_right";
     const std::string source_frame_id = "head_leopard_left";
-
+#else
+    // marco.accame: ok, it works.
+    // conclusion: there is a bug in the methods. it is used an inverse matrix.
+    const std::string target_frame_id = "head_leopard_left";
+    const std::string source_frame_id = "base_link";
+#endif
     yarp::os::BufferedPort<yarp::os::Bottle> m_inputPort; //From this port I receive the data from Pf3dtraker
 
     yarp::os::BufferedPort<yarp::os::Bottle>  m_port_commands_output;//test only!!!used in sendOutput
