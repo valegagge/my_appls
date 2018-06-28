@@ -7,8 +7,12 @@
 #include <yarp/sig/Matrix.h>
 #include <yarp/sig/Vector.h>
 #include <yarp/os/Bottle.h>
+#include <yarp/os/Time.h>
+
+#include <math.h>
 
 #include "follower.h"
+#include "../../../yarp/src/libYARP_OS/include/yarp/os/Bottle.h"
 using namespace std;
 using namespace yarp::os;
 
@@ -18,7 +22,7 @@ using namespace yarp::os;
 double Follower::getPeriod()
 {
     // module periodicity (seconds), called implicitly by the module.
-    return 5;
+    return 0.01;
 }
 void Follower::sendOutput()
 {
@@ -56,6 +60,7 @@ bool Follower::updateModule()
 {
 //    sendOutput();
     followBall();
+//    moveRobot();
    return true;
 }
 
@@ -96,15 +101,43 @@ void Follower::followBall(void)
         return;
     }
 
+    //4. the distance from the bal is on x
+    double distance =  sqrt(pow(pointBallOutput[0], 2) + pow(pointBallOutput[1], 2));
+
+    const double RAD2DEG  = 180.0/M_PI;
+    double angle = atan2(pointBallOutput[1], pointBallOutput[0]) * RAD2DEG;
+
+    double lin_vel  = 0.0;
+    double ang_vel = 0.0;
+    const double factorDist2Vel = 0.8;
+    const double factorAng2Vel = 0.8;
+
+
+    if(distance > 0.8)
+        lin_vel = factorDist2Vel *distance;
+    else
+        cout << "distanza e' zero!!! " <<endl;
+
+
+
+    if(fabs(angle) >5)
+        ang_vel = factorAng2Vel * angle;
+    else
+        cout << "angolo e' zero!!! " <<endl;
+
+
+    sendCommand2BaseControl(0.0, lin_vel, ang_vel );
+
+
 }
 bool Follower::getMatrix(yarp::sig::Matrix &transform)
 {
     bool res = m_transformClient->getTransform (target_frame_id, source_frame_id, transform);
     if(res)
     {
-        yDebug() << "FOLLOWER: i get the transform matrix:"; // << transform.toString();
-
-        std::cout << transform.toString() << std::endl << std::endl;
+//         yDebug() << "FOLLOWER: i get the transform matrix:"; // << transform.toString();
+//
+//         std::cout << transform.toString() << std::endl << std::endl;
     }
     else
     {
@@ -119,7 +152,7 @@ bool Follower::getBallPointTrasformed(yarp::sig::Vector &pointBallInput, yarp::s
     bool res = m_transformClient->transformPoint(target_frame_id, source_frame_id, pointBallInput, pointBallOutput);
     if(res)
     {
-        yDebug() << "FOLLOWER: point (" << pointBallInput.toString() << ") has been transformed in (" << pointBallOutput.toString() << ")";
+//        yDebug() << "FOLLOWER: point (" << pointBallInput.toString() << ") has been transformed in (" << pointBallOutput.toString() << ")";
     }
     else
     {
@@ -154,6 +187,8 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
     m_port_commands_output.open("/follower/control:o");
 
     m_inputPort.open("/follower/ballPoint:i");
+
+    m_outputPort2baseCtr.open("/follower/commands:o");
 
     if(!initTransformClient())
         return false;
@@ -219,4 +254,92 @@ bool Follower::initTransformClient(void)
 
     //from now I can use m_transformClient
     return true;
+}
+
+bool Follower::moveRobot(void)
+{
+
+    if(m_outputPort2baseCtr.getOutputCount() == 0)
+        return true;
+
+    static double absTime = yarp::os::Time::now();
+    static double startTime = yarp::os::Time::now();
+    static int direction = 1.0;
+
+    double currTime = yarp::os::Time::now();
+
+    if(currTime - absTime >120.0)// after 2 minutes stop robot
+    {
+        //stop moveRobot
+        sendCommand2BaseControl(0.0, 0.0, 0.0);
+        cout << "_";
+        return true;
+
+    }
+    if(currTime-startTime < 10.0)
+    {
+        sendCommand2BaseControl(0.0, 0.0, 10.0*direction );
+        cout << ".";
+    }
+    else
+    {
+        startTime = yarp::os::Time::now();
+        (direction >0)? direction = -1.0 : direction=1.0;
+        cout <<"|";
+    }
+    cout.flush();
+    return true;
+}
+
+
+// bool Follower::rotateRobot(double angle)
+// {
+//     static bool isDone = false;
+//     static double targetAngle = angle;
+//
+//     double currTime = yarp::os::Time::now();
+//
+//     double currentAngle = 0.0; //to be done
+//     static const double threshold  = 3.0;
+//
+//     if(isDone)
+//         return true;
+//
+//     double diff  = angle-currentAngle;
+//     if (fabs(diff) > threshold)
+//     {
+//         sendCommand2BaseControl(0.0, 0.0, 0.8*diff );
+//
+//     }
+//     else
+//     {
+//         cout <<"it is done!!!!" <<endl;
+//         isDone = true;
+//     }
+//
+//     cout.flush();
+//     return true;
+// }
+
+bool Follower::sendCommand2BaseControl(double linearDirection, double linearVelocity, double angularVelocity)
+{
+    static yarp::os::Stamp stamp;
+
+    stamp.update();
+    //send the motors commands and the status to the yarp ports
+    if (m_outputPort2baseCtr.getOutputCount() > 0)
+    {
+        Bottle &b = m_outputPort2baseCtr.prepare();
+        m_outputPort2baseCtr.setEnvelope(stamp);
+        b.clear();
+        b.addInt(2);                    // polar speed commands
+        b.addDouble(linearDirection);    // angle in deg
+        b.addDouble(linearVelocity);    // lin_vel in m/s
+        b.addDouble(angularVelocity);    // ang_vel in deg/s
+        b.addDouble(100);
+        m_outputPort2baseCtr.write();
+    }
+
+    return true;
+
 }

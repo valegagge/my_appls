@@ -43,6 +43,7 @@ private:
     const std::string source_frame_id = "base_link";
 #endif
     yarp::os::BufferedPort<yarp::os::Bottle> m_inputPort; //From this port I receive the data from Pf3dtraker
+    yarp::os::BufferedPort<yarp::os::Bottle>  m_outputPort2baseCtr;
 
     yarp::os::BufferedPort<yarp::os::Bottle>  m_port_commands_output;//test only!!!used in sendOutput
     void sendOutput(); //only for test. it simulates joystick
@@ -56,6 +57,10 @@ private:
 
 
     bool initTransformClient(void);
+
+    bool moveRobot(void);
+    
+    bool sendCommand2BaseControl(double linearDirection, double linearVelocity, double angularVelocity);
 
 
 };
