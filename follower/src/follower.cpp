@@ -24,19 +24,19 @@ double Follower::getPeriod()
     // module periodicity (seconds), called implicitly by the module.
     return 0.01;
 }
-void Follower::sendOutput()
+void Follower::sendOutputLikeJoystick()
 {
     static yarp::os::Stamp stamp;
 
     //send data to baseControl module
-    if (m_port_commands_output.getOutputCount() == 0)
+    if (m_outputPortJoystick.getOutputCount() == 0)
     {
         //if I have not connection I don't send anything
         return;
     }
     stamp.update();
-    Bottle &b = m_port_commands_output.prepare();
-    m_port_commands_output.setEnvelope(stamp);
+    Bottle &b = m_outputPortJoystick.prepare();
+    m_outputPortJoystick.setEnvelope(stamp);
     b.clear();
     //like joystick
     b.addInt(3);//write cartesian speed
@@ -52,7 +52,7 @@ void Follower::sendOutput()
     b.addDouble(m_control_out.angular_vel);    // ang_vel in deg/s
     b.addDouble(100);*/
 
-    m_port_commands_output.write();
+    m_outputPortJoystick.write();
     }
 
 // This is our main function. Will be called periodically every getPeriod() seconds
@@ -101,7 +101,7 @@ void Follower::followBall(void)
         return;
     }
 
-    //4. the distance from the bal is on x
+    //4. x axis is the first element, y is on second. (In order to calculate the distance see mobile base frame)
     double distance =  sqrt(pow(pointBallOutput[0], 2) + pow(pointBallOutput[1], 2));
 
     const double RAD2DEG  = 180.0/M_PI;
@@ -109,21 +109,21 @@ void Follower::followBall(void)
 
     double lin_vel  = 0.0;
     double ang_vel = 0.0;
-    const double factorDist2Vel = 0.8;
-    const double factorAng2Vel = 0.8;
 
 
-    if(distance > 0.8)
-        lin_vel = factorDist2Vel *distance;
+    if(distance > m_cfg.distanceThreshold)
+    {
+        lin_vel = m_cfg.factorDist2Vel *distance;
+    }
     else
-        cout << "distanza e' zero!!! " <<endl;
+        cout << "the Distance is under threshold!! " <<endl; //only for debug pupose
 
 
 
-    if(fabs(angle) >5)
-        ang_vel = factorAng2Vel * angle;
+    if(fabs(angle) >m_cfg.angleThreshold)
+        ang_vel = m_cfg.factorAng2Vel * angle;
     else
-        cout << "angolo e' zero!!! " <<endl;
+        cout << "the angle is under threshold!! " <<endl; // //only for debug pupose
 
 
     sendCommand2BaseControl(0.0, lin_vel, ang_vel );
@@ -174,7 +174,27 @@ bool Follower::respond(const Bottle& command, Bottle& reply)
     return true;
 }
 
+bool Follower::readConfig(yarp::os::ResourceFinder &rf, FollowerConfig &cfg)
+{
 
+    Bottle config_group = rf.findGroup("GENERAL");
+    if (config_group.isNull())
+    {
+        yError() << "Missing GENERAL group! the module uses default value!";
+    }
+    else
+    {
+        if (config_group.check("factorDist2Vel")) { cfg.factorDist2Vel = config_group.find("factorDist2Vel").asDouble(); }
+        if (config_group.check("factorAng2Vel"))  { cfg.factorAng2Vel = config_group.find("factorAng2Vel").asDouble(); }
+        if (config_group.check("inputPort"))  {cfg.inputPortName = config_group.find("inputPort").asString(); }
+        if (config_group.check("outputPort"))  { cfg.outputPortName = config_group.find("outputPort").asString(); }
+        if (config_group.check("distanceThreshold"))  { cfg.distanceThreshold = config_group.find("distanceThreshold").asDouble(); }
+        if (config_group.check("angleThreshold"))  { cfg.angleThreshold = config_group.find("angleThreshold").asDouble(); }
+    }
+
+    cfg.print();
+    return true;
+}
 
 
 
@@ -184,11 +204,27 @@ bool Follower::respond(const Bottle& command, Bottle& reply)
 // equivalent to the "open" method.
 bool Follower::configure(yarp::os::ResourceFinder &rf)
 {
-    m_port_commands_output.open("/follower/control:o");
+    m_outputPortJoystick.open("/follower/test-joystick:o");//test
 
-    m_inputPort.open("/follower/ballPoint:i");
 
-    m_outputPort2baseCtr.open("/follower/commands:o");
+    if(!readConfig(rf, m_cfg))
+    {
+        yError() << "Error reading configuration file";
+        return false;
+    }
+
+    if(! m_inputPort.open("/follower/" + m_cfg.inputPortName +":i"))
+    {
+        yError() << "Error opening input port";
+        return false;
+    }
+
+    if(!m_outputPort2baseCtr.open("/follower/" + m_cfg.outputPortName + ":o"))
+    {
+        yError() << "Error opening input port";
+        return false;
+    }
+
 
     if(!initTransformClient())
         return false;
@@ -200,11 +236,14 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
 bool Follower::interruptModule()
 {
 
-    m_port_commands_output.interrupt();
-    m_port_commands_output.close();
+    m_outputPortJoystick.interrupt();
+    m_outputPortJoystick.close();
 
     m_inputPort.interrupt();
     m_inputPort.close();
+
+    m_outputPort2baseCtr.interrupt();
+    m_outputPort2baseCtr.close();
 
     return true;
 }
@@ -256,6 +295,7 @@ bool Follower::initTransformClient(void)
     return true;
 }
 
+//test function: if you want use it pu it in update()
 bool Follower::moveRobot(void)
 {
 
@@ -292,41 +332,13 @@ bool Follower::moveRobot(void)
 }
 
 
-// bool Follower::rotateRobot(double angle)
-// {
-//     static bool isDone = false;
-//     static double targetAngle = angle;
-//
-//     double currTime = yarp::os::Time::now();
-//
-//     double currentAngle = 0.0; //to be done
-//     static const double threshold  = 3.0;
-//
-//     if(isDone)
-//         return true;
-//
-//     double diff  = angle-currentAngle;
-//     if (fabs(diff) > threshold)
-//     {
-//         sendCommand2BaseControl(0.0, 0.0, 0.8*diff );
-//
-//     }
-//     else
-//     {
-//         cout <<"it is done!!!!" <<endl;
-//         isDone = true;
-//     }
-//
-//     cout.flush();
-//     return true;
-// }
 
 bool Follower::sendCommand2BaseControl(double linearDirection, double linearVelocity, double angularVelocity)
 {
     static yarp::os::Stamp stamp;
 
     stamp.update();
-    //send the motors commands and the status to the yarp ports
+    //send velocity commands to the base control
     if (m_outputPort2baseCtr.getOutputCount() > 0)
     {
         Bottle &b = m_outputPort2baseCtr.prepare();
