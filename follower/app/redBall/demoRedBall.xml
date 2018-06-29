@@ -40,6 +40,13 @@
                 <node>vale</node>
         </module>
   
+        <module>
+                <name>follower</name>
+                <parameters>--from /usr/local/src/robot/my_appls/follower/app/conf/follower_SIM.ini</parameters>
+                <node>vale</node>
+        </module>
+
+
         <connection>
                 <from>/SIM_CER_ROBOT/cam/cameras:o</from>
                 <to>/imageSplitter/input:i</to>
@@ -60,7 +67,13 @@
 
         <connection>
                 <from>/pf3dTracker/data:o</from>
-                <to>/follower/ballPoint:i</to>
+                <to>/follower/ballPoints:i</to>
+                <protocol>udp</protocol>
+        </connection>
+
+        <connection>
+                <from>/follower/commands:o</from>
+                <to>/baseControl/control:i</to>
                 <protocol>udp</protocol>
         </connection>
 
