@@ -8,6 +8,7 @@
 #include <yarp/os/Bottle.h>
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/IFrameTransform.h>
+#include <yarp/os/Property.h>
 
 #include <string>
 
@@ -81,7 +82,8 @@ private:
 #endif
     yarp::os::BufferedPort<yarp::os::Bottle> m_inputPort; //From this port I receive the data from Pf3dtraker
     yarp::os::BufferedPort<yarp::os::Bottle>  m_outputPort2baseCtr; //I send commands to baseControl interruptModule
- 
+    yarp::os::BufferedPort<yarp::os::Property>  m_outputPort2gazeCtr; //I send commands to the gaze controller
+
     FollowerConfig m_cfg;
 
 
@@ -98,6 +100,8 @@ private:
     bool readConfig(yarp::os::ResourceFinder &rf, FollowerConfig &cfg);
 
     bool sendCommand2BaseControl(double linearDirection, double linearVelocity, double angularVelocity);
+    bool sendCommand2GazeControl(double x, double y, double z);
+    bool sendCommand2GazeControl_lookAtPixel(double u, double v);
 
 
     // ---- TEST STUFF

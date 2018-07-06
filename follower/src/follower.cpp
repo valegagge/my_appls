@@ -95,6 +95,9 @@ void Follower::followBall(void)
     pointBallInput[1] = b->get(1).asDouble();
     pointBallInput[2] = b->get(2).asDouble();
 
+    double ballPointU = b->get(4).asDouble(); //u and V are the the coordinate x any of image.
+    double ballPointV = b->get(5).asDouble();
+
     if(!getBallPointTrasformed(pointBallInput, pointBallOutput))
     {
         yError() << "FOLLOWER: error in getBallPointTrasformed()";
@@ -128,8 +131,11 @@ void Follower::followBall(void)
 
     sendCommand2BaseControl(0.0, lin_vel, ang_vel );
 
-
+    //5. send commands to gaze control
+    sendCommand2GazeControl_lookAtPixel(ballPointU, ballPointV);
 }
+
+
 bool Follower::getMatrix(yarp::sig::Matrix &transform)
 {
     bool res = m_transformClient->getTransform (target_frame_id, source_frame_id, transform);
@@ -221,7 +227,14 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
 
     if(!m_outputPort2baseCtr.open("/follower/" + m_cfg.outputPortName + ":o"))
     {
-        yError() << "Error opening input port";
+        yError() << "Error opening output port for base control";
+        return false;
+    }
+
+    //if(!m_outputPort2gazeCtr.open("/follower/" + "gazetargets" + ":o"))
+     if(!m_outputPort2gazeCtr.open("/follower/gazetargets:o"))
+    {
+        yError() << "Error opening output port for gaze control";
         return false;
     }
 
@@ -245,6 +258,8 @@ bool Follower::interruptModule()
     m_outputPort2baseCtr.interrupt();
     m_outputPort2baseCtr.close();
 
+    m_outputPort2gazeCtr.interrupt();
+    m_outputPort2gazeCtr.close();
     return true;
 }
 // Close function, to perform cleanup.
@@ -351,6 +366,52 @@ bool Follower::sendCommand2BaseControl(double linearDirection, double linearVelo
         b.addDouble(100);
         m_outputPort2baseCtr.write();
     }
+
+    return true;
+
+}
+
+bool Follower::sendCommand2GazeControl(double x, double y, double z)
+{
+    if (m_outputPort2gazeCtr.getOutputCount() == 0)
+        return true;
+
+    Property &p = m_outputPort2gazeCtr.prepare();
+    p.clear();
+    //p.put("control-frame","left");
+    p.put("control-frame","gaze");
+    p.put("target-type","cartesian");
+
+    Bottle location = yarp::os::Bottle();
+    Bottle &val = location.addList();
+    val.addDouble(x);
+    val.addDouble(y);
+    val.addDouble(z);
+    p.put("target-location",location.get(0));
+    m_outputPort2gazeCtr.write();
+
+    return true;
+
+}
+
+
+bool Follower::sendCommand2GazeControl_lookAtPixel(double u, double v)
+{
+    if (m_outputPort2gazeCtr.getOutputCount() == 0)
+        return true;
+
+    Property &p = m_outputPort2gazeCtr.prepare();
+    p.clear();
+    p.put("control-frame","left");
+    p.put("target-type","image");
+    p.put("image","left");
+
+    Bottle location = yarp::os::Bottle();
+    Bottle &val = location.addList();
+    val.addDouble(u);
+    val.addDouble(v);
+    p.put("target-location",location.get(0));
+    m_outputPort2gazeCtr.write();
 
     return true;
 

@@ -1,12 +1,12 @@
 <application>
 <name>CER Red-Ball TRACKER</name>
 
-<!-----
         <dependencies>
-                <port>/icub/camcalib/left/out</port>
-                <port>/iKinGazeCtrl/rpc</port>
+         <!--       <port>/icub/camcalib/left/out</port> -->
+         <!--	lanciamo il gaze controller dopo
+                <port>/cer_gaze-controller/head/rpc:o</port>
+           -->
         </dependencies>
- ------>
  
         <module>
                 <name>imageSplitter</name>
@@ -15,7 +15,8 @@
         </module>
 
         <module>
-                <name>iKinGazeCtrl3</name>
+                <name>cer_gaze-controller</name>
+                <parameters>--robot SIM_CER_ROBOT --cameras::file cerSimEyes_640x480.ini </parameters>
                 <node>vale</node>
         </module>
         
@@ -77,6 +78,11 @@
                 <protocol>udp</protocol>
         </connection>
 
+		<connection>
+                <from>/follower/gazetargets:o</from>
+                <to>/cer_gaze-controller/target:i</to>
+                <protocol>udp</protocol>
+        </connection>
 
 
 </application>
