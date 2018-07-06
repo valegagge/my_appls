@@ -68,10 +68,10 @@ bool ballJoystickControl::configure(ResourceFinder &rf)
         return false;
     }
 
-    m_ballName = rf.check("ballName", Value("ballJoystickControl")).asString();
+    m_ballName = rf.check("ballName", Value("sphere1")).asString();
 
-    m_gain_fowardBack = rf.check("gain_fowardBack", Value(0.0001)).asDouble();
-    m_gain_leftRight = rf.check("gain_fowardBack", Value(0.0001)).asDouble();
+    m_gain_fowardBack = rf.check("gain_fowardBack", Value(0.1)).asDouble();
+    m_gain_leftRight = rf.check("gain_leftRight", Value(0.1)).asDouble();
 
     return true;
 }
@@ -98,6 +98,14 @@ double ballJoystickControl::getPeriod()
     return m_threadPeriod;
 }
 
+inline bool buttonIsPressed(double *data, joystickAxis ja)
+{
+    if (fabs(data[ja]) < 10)
+        return false;
+    else
+        return true;
+}
+
 bool ballJoystickControl::updateModule()
 {
     if (m_port_joystick_input.getInputCount() == 0)
@@ -107,6 +115,8 @@ bool ballJoystickControl::updateModule()
 
     double axis[20];
     static int rightSecurityButtonCount = 0;
+    static int rightButtonCount = 0;
+    static int leftButtonCount = 0;
     Bottle *b = m_port_joystick_input.read(false); //false ==> doesn't wait data
     if(!b)
         return true;
@@ -127,7 +137,38 @@ bool ballJoystickControl::updateModule()
 
 
     if(rightSecurityButtonCount < RIGHT_SECURITY_BUTTON_THRESHOLD)
+    {
+        rightButtonCount=0;
+        leftButtonCount=0;
         return true;
+        yError() << "sec button is not pressed";
+    }
+
+    if((buttonIsPressed(axis, joystickAxis::LEFT_VERTICAL)) && (buttonIsPressed(axis, joystickAxis::RIGHT_HORIZONTAL)) )
+    {
+        rightButtonCount++; leftButtonCount++; yError() << "both are pressed";
+    }
+    else if(buttonIsPressed(axis, joystickAxis::LEFT_VERTICAL))
+    {
+        rightButtonCount=0; leftButtonCount++;  yError() << "LEFT is  pressed";
+    }
+    else if (buttonIsPressed(axis, joystickAxis::RIGHT_HORIZONTAL))
+    {
+        rightButtonCount++; leftButtonCount=0;  yError() << "RIGHT is  pressed";
+    }
+    else
+    {
+        rightButtonCount=0;
+        leftButtonCount=0;yError() << "NONE are pressed";
+    }
+
+    if((rightButtonCount < RIGHT_SECURITY_BUTTON_THRESHOLD) && (leftButtonCount < RIGHT_SECURITY_BUTTON_THRESHOLD) )
+    {
+//         rightButtonCount=0;
+//         leftButtonCount=0;
+        yError() << "both are NOT PRESSED ENOUGHT";
+        return true;
+    }
 
     //get value of interesing axis.
     double val_forward = axis[joystickAxis::LEFT_VERTICAL];
@@ -143,7 +184,7 @@ bool ballJoystickControl::updateModule()
     // Prapare bottle containg command to send
     Bottle cmdGet, ansGet, cmdSet, ansSet;
     cmdGet.addString("getPose");
-    cmdGet.addString(" pallinaTODO");
+    cmdGet.addString(m_ballName);
     double x = ansGet.get(0).asDouble();
     double y = ansGet.get(1).asDouble();
     m_worldInterfacePort.write(cmdGet, ansGet);
@@ -153,7 +194,7 @@ bool ballJoystickControl::updateModule()
     y+=val_left_right;
 
     cmdSet.addString("setPose");
-    cmdSet.addString(" pallinaTODO");
+    cmdSet.addString(m_ballName);
     cmdSet.addDouble(x);
     cmdSet.addDouble(y);
     cmdSet.addDouble(ansGet.get(2).asDouble());
