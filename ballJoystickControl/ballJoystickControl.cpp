@@ -68,10 +68,10 @@ bool ballJoystickControl::configure(ResourceFinder &rf)
         return false;
     }
 
-    m_ballName = rf.check("ballName", Value("sphere1")).asString();
+    m_ballName = rf.check("ballName", Value("sphere3")).asString();
 
-    m_gain_fowardBack = rf.check("gain_fowardBack", Value(0.1)).asDouble();
-    m_gain_leftRight = rf.check("gain_leftRight", Value(0.1)).asDouble();
+    m_gain_fowardBack = rf.check("gain_fowardBack", Value(0.001)).asDouble();
+    m_gain_leftRight = rf.check("gain_leftRight", Value(0.001)).asDouble();
 
     return true;
 }
@@ -141,7 +141,7 @@ bool ballJoystickControl::updateModule()
         rightButtonCount=0;
         leftButtonCount=0;
         return true;
-        yError() << "sec button is not pressed";
+        yError() << "security button is not pressed";
     }
 
     if((buttonIsPressed(axis, joystickAxis::LEFT_VERTICAL)) && (buttonIsPressed(axis, joystickAxis::RIGHT_HORIZONTAL)) )
@@ -185,9 +185,9 @@ bool ballJoystickControl::updateModule()
     Bottle cmdGet, ansGet, cmdSet, ansSet;
     cmdGet.addString("getPose");
     cmdGet.addString(m_ballName);
+    m_worldInterfacePort.write(cmdGet, ansGet);
     double x = ansGet.get(0).asDouble();
     double y = ansGet.get(1).asDouble();
-    m_worldInterfacePort.write(cmdGet, ansGet);
     yDebug() << "BALL-JOYSTICK-CONTROL: cmd-GET= " << cmdGet.toString() << "  Ans=" << ansGet.toString();
 
     x+=val_forward;
