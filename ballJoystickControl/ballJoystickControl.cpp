@@ -24,26 +24,8 @@
 using namespace yarp::os;
 using namespace std;
 
-enum joystickAxis
-{
-
-    DUMMY              = 0,
-    LEFT_VERTICAL      = 1, //left joystick button to move forward and back
-    LEFT_HORIZONTAL    = 2,
-    RIGHT_HORIZONTAL   = 3, //right joystick button to move left and right
-    LEFT_SHIFT         = 4, //security button for ball move. here is not used
-    RIGHT_VERTICAL     = 5,
-    RIGHT_SHIFT        = 6, //security button for ball move
-    DIGITAL_HORIZONTAL = 7,
-    DIGITAL_VERTICAL   = 8
-};
-
-#define AXIS_NUM               10
-
 ballJoystickControl::ballJoystickControl():m_threadPeriod(0.01), m_ballName("sphere1")
-{
-;
-}
+{;}
 
 bool ballJoystickControl::configure(ResourceFinder &rf)
 {
@@ -68,7 +50,7 @@ bool ballJoystickControl::configure(ResourceFinder &rf)
         return false;
     }
 
-    m_ballName = rf.check("ballName", Value("sphere3")).asString();
+    m_ballName = rf.check("ballName", Value("sphere1")).asString();
 
     m_gain_fowardBack = rf.check("gain_fowardBack", Value(0.001)).asDouble();
     m_gain_leftRight = rf.check("gain_leftRight", Value(0.001)).asDouble();
@@ -98,14 +80,6 @@ double ballJoystickControl::getPeriod()
     return m_threadPeriod;
 }
 
-inline bool buttonIsPressed(double *data, joystickAxis ja)
-{
-    if (fabs(data[ja]) < 10)
-        return false;
-    else
-        return true;
-}
-
 bool ballJoystickControl::updateModule()
 {
     if (m_port_joystick_input.getInputCount() == 0)
@@ -113,66 +87,20 @@ bool ballJoystickControl::updateModule()
         return true;
     }
 
-    double axis[20];
-    static int rightSecurityButtonCount = 0;
-    static int rightButtonCount = 0;
-    static int leftButtonCount = 0;
     Bottle *b = m_port_joystick_input.read(false); //false ==> doesn't wait data
     if(!b)
         return true;
 
     //read data of all axis
-    for (int j = 0; j < AXIS_NUM; j++)
-    {
-        axis[j] = b->get(j).asDouble();
-    }
-
-    #define RIGHT_SECURITY_BUTTON_IS_PUSHED  ((fabs(axis[joystickAxis::LEFT_SHIFT]) < 10 && fabs(axis[joystickAxis::RIGHT_SHIFT]) > 10))
-    #define RIGHT_SECURITY_BUTTON_THRESHOLD  10
-
-    if(RIGHT_SECURITY_BUTTON_IS_PUSHED)
-        rightSecurityButtonCount++;
-    else
-        rightSecurityButtonCount = 0;
-
-
-    if(rightSecurityButtonCount < RIGHT_SECURITY_BUTTON_THRESHOLD)
-    {
-        rightButtonCount=0;
-        leftButtonCount=0;
+    if(!joystickMng.readValues(b))
         return true;
-        yError() << "security button is not pressed";
-    }
 
-    if((buttonIsPressed(axis, joystickAxis::LEFT_VERTICAL)) && (buttonIsPressed(axis, joystickAxis::RIGHT_HORIZONTAL)) )
-    {
-        rightButtonCount++; leftButtonCount++; yError() << "both are pressed";
-    }
-    else if(buttonIsPressed(axis, joystickAxis::LEFT_VERTICAL))
-    {
-        rightButtonCount=0; leftButtonCount++;  yError() << "LEFT is  pressed";
-    }
-    else if (buttonIsPressed(axis, joystickAxis::RIGHT_HORIZONTAL))
-    {
-        rightButtonCount++; leftButtonCount=0;  yError() << "RIGHT is  pressed";
-    }
-    else
-    {
-        rightButtonCount=0;
-        leftButtonCount=0;yError() << "NONE are pressed";
-    }
-
-    if((rightButtonCount < RIGHT_SECURITY_BUTTON_THRESHOLD) && (leftButtonCount < RIGHT_SECURITY_BUTTON_THRESHOLD) )
-    {
-//         rightButtonCount=0;
-//         leftButtonCount=0;
-        yError() << "both are NOT PRESSED ENOUGHT";
+    if(!joystickMng.buttonsValuesHasMeaning())
         return true;
-    }
 
     //get value of interesing axis.
-    double val_forward = axis[joystickAxis::LEFT_VERTICAL];
-    double val_left_right = axis[joystickAxis::RIGHT_HORIZONTAL];
+    double val_forward = joystickMng.getValue(joystickButtons::Axis::LEFT_VERTICAL);
+    double val_left_right = joystickMng.getValue(joystickButtons::Axis::RIGHT_HORIZONTAL);
 
     saturate(val_forward, 100);
     saturate(val_left_right, 100);
@@ -188,7 +116,7 @@ bool ballJoystickControl::updateModule()
     m_worldInterfacePort.write(cmdGet, ansGet);
     double x = ansGet.get(0).asDouble();
     double y = ansGet.get(1).asDouble();
-    yDebug() << "BALL-JOYSTICK-CONTROL: cmd-GET= " << cmdGet.toString() << "  Ans=" << ansGet.toString();
+    //yDebug() << "BALL-JOYSTICK-CONTROL: cmd-GET= " << cmdGet.toString() << "  Ans=" << ansGet.toString();
 
     x+=val_forward;
     y+=val_left_right;
@@ -202,7 +130,7 @@ bool ballJoystickControl::updateModule()
     cmdSet.addDouble(ansGet.get(4).asDouble());
     cmdSet.addDouble(ansGet.get(5).asDouble());
     m_worldInterfacePort.write(cmdSet, ansSet);
-    yDebug() << "BALL-JOYSTICK-CONTROL: cmd-SET= " << cmdSet.toString() << "  Ans=" << ansSet.toString();
+   // yDebug() << "BALL-JOYSTICK-CONTROL: cmd-SET= " << cmdSet.toString() << "  Ans=" << ansSet.toString();
 
 
 }

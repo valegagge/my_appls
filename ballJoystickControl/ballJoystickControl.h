@@ -25,6 +25,9 @@
 #include <yarp/os/BufferedPort.h>
 #include <yarp/os/Bottle.h>
 
+#include "joystick.h"
+
+
 class ballJoystickControl: public yarp::os::RFModule
 {
 
@@ -43,8 +46,11 @@ public:
 
 private:
 
+    ballJoystickInterpreter joystickMng;
+
     double              m_threadPeriod;
     std::string         m_ballName;
+    joystickButtons     buttons;
 
     yarp::os::RpcClient m_worldInterfacePort;
     yarp::os::BufferedPort<yarp::os::Bottle> m_port_joystick_input;

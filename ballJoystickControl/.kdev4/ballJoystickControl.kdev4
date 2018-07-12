@@ -19,5 +19,26 @@ Name=GCC
 Path=gcc
 Type=GCC
 
+[Launch]
+Launch Configurations=Launch Configuration 0
+
+[Launch][Launch Configuration 0]
+Configured Launch Modes=execute
+Configured Launchers=nativeAppLauncher
+Name=ballJoystickControl
+Type=Native Application
+
+[Launch][Launch Configuration 0][Data]
+Arguments=--ballName sphere3
+Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x02\x00\x00\x00&\x00b\x00a\x00l\x00l\x00J\x00o\x00y\x00s\x00t\x00i\x00c\x00k\x00C\x00o\x00n\x00t\x00r\x00o\x00l\x00\x00\x00&\x00b\x00a\x00l\x00l\x00J\x00o\x00y\x00s\x00t\x00i\x00c\x00k\x00C\x00o\x00n\x00t\x00r\x00o\x00l)
+Dependency Action=Nothing
+EnvironmentGroup=
+Executable=file:///usr/local/src/robot/my_appls/ballJoystickControl/
+External Terminal=konsole --noclose --workdir %workdir -e %exe
+Project Target=ballJoystickControl,ballJoystickControl
+Use External Terminal=false
+Working Directory=
+isExecutable=false
+
 [Project]
 VersionControlSupport=kdevgit
