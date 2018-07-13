@@ -7,7 +7,19 @@
                 <port>/cer_gaze-controller/head/rpc:o</port>
            -->
         </dependencies>
- 
+
+        <module>
+                <name>joystickCtrl</name>
+                <parameters> --context joystickCtrl --from cer_linux.ini --force_configuration</parameters>
+                <node>vale</node>
+        </module>
+
+        <module>
+            <name>baseControl</name>
+            <parameters>--context baseControl_SIM --from baseCtrl_cer.ini --skip_robot_interface_check --joystick_connect</parameters>
+            <node>vale</node>
+        </module>
+
         <module>
                 <name>imageSplitter</name>
                 <parameters></parameters>
@@ -20,21 +32,11 @@
                 <node>vale</node>
         </module>
         
-         <module>
-                <name>camCalib</name>
-                <node>vale</node>
-        </module>
-             
         <module>
                 <name>pf3dTracker</name>
                 <node>vale</node>
         </module>
-   
-        <module>
-                <name>demoRedBall</name>
-                <node>vale</node>
-        </module>
-  
+
         <module>
                 <name>yarpview</name>
                 <parameters>--name /PF3DTracker_viewer --x 320 --y 0 --p 50 --compact</parameters>
@@ -47,7 +49,12 @@
                 <node>vale</node>
         </module>
 
-
+        <module>
+                <name>ballJoystickControl</name>
+                <parameters>--ballName pallina2 --gain_fowardBack 0.0004 --gain_leftRight 0.0004 </parameters>
+                <node>vale</node>
+        </module>
+               
         <connection>
                 <from>/SIM_CER_ROBOT/cam/cameras:o</from>
                 <to>/imageSplitter/input:i</to>
@@ -83,6 +90,16 @@
                 <to>/cer_gaze-controller/target:i</to>
                 <protocol>udp</protocol>
         </connection>
-
-
+        
+        <connection>
+                <from>/joystickCtrl:o</from>
+                <to>/ballJoystickControl/joiystick:i</to>
+                <protocol>udp</protocol>
+        </connection>
+        
+        <connection>
+                <from>/ballJoystickControl/rpc</from>
+                <to>/world_input_port</to>
+                <protocol>tcp</protocol>
+        </connection>
 </application>
