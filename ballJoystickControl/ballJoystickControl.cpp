@@ -19,12 +19,14 @@
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
 #include <math.h>
+#include <iostream>
 #include "ballJoystickControl.h"
+
 
 using namespace yarp::os;
 using namespace std;
 
-ballJoystickControl::ballJoystickControl():m_threadPeriod(0.01), m_ballName("sphere1")
+ballJoystickControl::ballJoystickControl():m_threadPeriod(0.01), m_ballName("sphere1"), m_ballIsCreated(false)
 {;}
 
 bool ballJoystickControl::configure(ResourceFinder &rf)
@@ -55,7 +57,46 @@ bool ballJoystickControl::configure(ResourceFinder &rf)
     m_gain_fowardBack = rf.check("gain_fowardBack", Value(0.001)).asDouble();
     m_gain_leftRight = rf.check("gain_leftRight", Value(0.001)).asDouble();
 
+    printCfg();
+
+
     return true;
+}
+
+bool ballJoystickControl::createBall(void)
+{
+
+    yDebug() << "I'm about to create the red ball...";
+    Bottle cmd, ans;
+    cmd.clear();
+    ans.clear();
+    //makeSphere 0.1 0 0 1.15 0 0 0 255 0 0 "" "pallina2"
+    cmd.addString("makeSphere");
+    cmd.addDouble(0.1); //radius
+    cmd.addDouble(0); //x
+    cmd.addDouble(0); //y
+    cmd.addDouble(1.15); //z
+    cmd.addDouble(0); //r
+    cmd.addDouble(0); //p
+    cmd.addDouble(0); //y
+    cmd.addInt(255); //red
+    cmd.addInt(0); //green
+    cmd.addInt(0); //blue
+    cmd.addString(""); //frame name
+    cmd.addString(m_ballName);
+    m_worldInterfacePort.write(cmd, ans);
+    //yDebug() << "BALL-JOYSTICK-CONTROL: makeSphere= " << cmd.toString() << "  Ans=" << ans.toString();
+    if(ans.toString() == m_ballName)
+        m_ballIsCreated = true;
+    else
+        m_ballIsCreated = false;
+    return m_ballIsCreated;
+
+}
+void ballJoystickControl::printCfg(void)
+{
+    yDebug() << "I'm about to start with following configuration: ";
+    yDebug() << "ballName=" << m_ballName << " gain_fowardBack=" << m_gain_fowardBack << "gain_leftRight=" << m_gain_leftRight;
 }
 
 bool ballJoystickControl::respond(const Bottle& command, Bottle& reply)
@@ -82,6 +123,34 @@ double ballJoystickControl::getPeriod()
 
 bool ballJoystickControl::updateModule()
 {
+
+    if( (!m_ballIsCreated) && (m_worldInterfacePort.asPort().getOutputCount() >0 ))
+    {
+        bool ret = createBall();
+        if(!ret)
+        {
+            yWarning() << "ATTENTION: I could NOT create the ball!!";
+            yWarning() << "Do you want continue anyway??";
+            char input[255];
+                cin >> input;
+                if (input[0]!='y' && input[0]!='Y')
+                {
+                    m_ballIsCreated = true;
+                    yInfo()<< "OK! You need to create a ball with name " << m_ballName;
+                }
+                else
+                {
+                    yInfo ( "Quitting...\n");
+                    return false;
+                }
+        }
+        else
+        {
+            yInfo() << "Ball has been created with name " << m_ballName << " !!";
+        }
+
+    }
+
     if (m_port_joystick_input.getInputCount() == 0)
     {
         return true;
@@ -111,12 +180,16 @@ bool ballJoystickControl::updateModule()
 
     // Prapare bottle containg command to send
     Bottle cmdGet, ansGet, cmdSet, ansSet;
+    cmdGet.clear();
+    ansGet.clear();
+    cmdSet.clear();
+    ansSet.clear();
     cmdGet.addString("getPose");
     cmdGet.addString(m_ballName);
     m_worldInterfacePort.write(cmdGet, ansGet);
     double x = ansGet.get(0).asDouble();
     double y = ansGet.get(1).asDouble();
-    //yDebug() << "BALL-JOYSTICK-CONTROL: cmd-GET= " << cmdGet.toString() << "  Ans=" << ansGet.toString();
+    yDebug() << "BALL-JOYSTICK-CONTROL: cmd-GET= " << cmdGet.toString() << "  Ans=" << ansGet.toString();
 
     x+=val_forward;
     y+=val_left_right;
@@ -130,7 +203,7 @@ bool ballJoystickControl::updateModule()
     cmdSet.addDouble(ansGet.get(4).asDouble());
     cmdSet.addDouble(ansGet.get(5).asDouble());
     m_worldInterfacePort.write(cmdSet, ansSet);
-   // yDebug() << "BALL-JOYSTICK-CONTROL: cmd-SET= " << cmdSet.toString() << "  Ans=" << ansSet.toString();
+    yDebug() << "BALL-JOYSTICK-CONTROL: cmd-SET= " << cmdSet.toString() << "  Ans=" << ansSet.toString();
 
 
 }

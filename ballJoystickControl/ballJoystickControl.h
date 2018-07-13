@@ -51,6 +51,7 @@ private:
     double              m_threadPeriod;
     std::string         m_ballName;
     joystickButtons     buttons;
+    bool                m_ballIsCreated;
 
     yarp::os::RpcClient m_worldInterfacePort;
     yarp::os::BufferedPort<yarp::os::Bottle> m_port_joystick_input;
@@ -60,6 +61,8 @@ private:
 
 
     void saturate(double& v, double sat_lim);
+    void printCfg(void);
+    bool createBall(void);
 
 };
 
