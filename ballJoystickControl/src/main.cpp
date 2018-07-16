@@ -23,12 +23,6 @@
 
 #include <yarp/os/Log.h>
 
-
-
-//#include <iostream>
-//#include <iomanip>
-//#include <string>
-
 #include "ballJoystickControl.h"
 
 
@@ -43,7 +37,7 @@ int main(int argc, char *argv[])
 {
     ResourceFinder rf;
     rf.setVerbose(true);
-    rf.setDefaultContext("SIM_CERROBOT");
+    rf.setDefaultContext("SIM_CER_ROBOT");
     rf.setDefaultConfigFile("ballJoystickCtrl.ini");
     rf.configure(argc,argv);
 
@@ -52,11 +46,12 @@ int main(int argc, char *argv[])
         yInfo("Possible options: ");
         yInfo("'robot <name>' the robot name for remote connection.");
         yInfo("'local <name>' the local port name.");
-        yInfo("'rate <r>' sets the threads rate (default 20ms).");
-        yInfo("'joystick_connect' tries to automatically connect to the joystickCtrl output.");
+        yInfo("'ballName <name>' the name used to identify the ball in gazebo. At startup the module try to craete a sphere with 'name'. In case of error ask to the use if he/she wanto to contiue.");
+        yInfo("'gain_x_axis <value>' the gain to apply to the value read by joystick control to move the ball on X axis. Default value is 0.001");
+        yInfo("'gain_y_axis <value>' the gain to apply to the value read by joystick control to move the ball on Y axis. Default value is 0.001.");
 
         yInfo("''");
-        yInfo("example: BallJoystickCtrl --robot SIM_CER_ROBOT --joystick_connect ");
+        yInfo("example: BallJoystickCtrl --robot SIM_CER_ROBOT --ballName myBall --gain_x_axis 0.0004 --gain_y_axis 0.0004");
         return 0;
     }
 

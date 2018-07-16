@@ -54,8 +54,8 @@ bool ballJoystickControl::configure(ResourceFinder &rf)
 
     m_ballName = rf.check("ballName", Value("sphere1")).asString();
 
-    m_gain_fowardBack = rf.check("gain_fowardBack", Value(0.001)).asDouble();
-    m_gain_leftRight = rf.check("gain_leftRight", Value(0.001)).asDouble();
+    m_gain_fowardBack = rf.check("gain_x_axis", Value(0.001)).asDouble();
+    m_gain_leftRight = rf.check("gain_y_axis", Value(0.001)).asDouble();
 
     printCfg();
 
@@ -178,7 +178,7 @@ bool ballJoystickControl::updateModule()
     val_left_right = val_left_right*m_gain_leftRight;
 
 
-    // Prapare bottle containg command to send
+    // Prapare bottle containg command to send in order to get the current position
     Bottle cmdGet, ansGet, cmdSet, ansSet;
     cmdGet.clear();
     ansGet.clear();
@@ -187,23 +187,26 @@ bool ballJoystickControl::updateModule()
     cmdGet.addString("getPose");
     cmdGet.addString(m_ballName);
     m_worldInterfacePort.write(cmdGet, ansGet);
+    //read the answer
     double x = ansGet.get(0).asDouble();
     double y = ansGet.get(1).asDouble();
-    yDebug() << "BALL-JOYSTICK-CONTROL: cmd-GET= " << cmdGet.toString() << "  Ans=" << ansGet.toString();
+    //yDebug() << "BALL-JOYSTICK-CONTROL: cmd-GET= " << cmdGet.toString() << "  Ans=" << ansGet.toString();
 
+    //Sum the calulated delta
     x+=val_forward;
     y+=val_left_right;
 
+    //send command for new position
     cmdSet.addString("setPose");
     cmdSet.addString(m_ballName);
     cmdSet.addDouble(x);
     cmdSet.addDouble(y);
-    cmdSet.addDouble(ansGet.get(2).asDouble());
-    cmdSet.addDouble(ansGet.get(3).asDouble());
-    cmdSet.addDouble(ansGet.get(4).asDouble());
-    cmdSet.addDouble(ansGet.get(5).asDouble());
+    cmdSet.addDouble(ansGet.get(2).asDouble()); // z
+    cmdSet.addDouble(ansGet.get(3).asDouble()); // r
+    cmdSet.addDouble(ansGet.get(4).asDouble()); // p
+    cmdSet.addDouble(ansGet.get(5).asDouble()); // y
     m_worldInterfacePort.write(cmdSet, ansSet);
-    yDebug() << "BALL-JOYSTICK-CONTROL: cmd-SET= " << cmdSet.toString() << "  Ans=" << ansSet.toString();
+    //yDebug() << "BALL-JOYSTICK-CONTROL: cmd-SET= " << cmdSet.toString() << "  Ans=" << ansSet.toString();
 
 
 }
