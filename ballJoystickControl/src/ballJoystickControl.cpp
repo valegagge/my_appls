@@ -168,7 +168,7 @@ bool ballJoystickControl::updateModule()
         return true;
 
     //get value of interesing axis.
-    double val_forward = joystickMng.getValue(joystickButtons::Axis::LEFT_VERTICAL);
+    double val_forward = joystickMng.getValue(joystickButtons::Axis::RIGHT_VERTICAL);
     double val_left_right = joystickMng.getValue(joystickButtons::Axis::RIGHT_HORIZONTAL);
 
     saturate(val_forward, 100);

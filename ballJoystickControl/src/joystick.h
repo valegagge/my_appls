@@ -122,38 +122,38 @@ public :
         if(!securityButtonIsValid())
         {
             //yError() << "securityButton is NOT valid!!!";
-            buttons.count[joystickButtons::Axis::LEFT_VERTICAL] = 0;
+            buttons.count[joystickButtons::Axis::RIGHT_VERTICAL] = 0;
             buttons.count[joystickButtons::Axis::RIGHT_HORIZONTAL] = 0;
             return true;
         }
 
-        yError() << "securityButtonIsValid!!!";
-        if((buttons.isPressed(joystickButtons::Axis::LEFT_VERTICAL)) && (buttons.isPressed(joystickButtons::Axis::RIGHT_HORIZONTAL)) )
+        //yError() << "securityButtonIsValid!!!";
+        if((buttons.isPressed(joystickButtons::Axis::RIGHT_VERTICAL)) && (buttons.isPressed(joystickButtons::Axis::RIGHT_HORIZONTAL)) )
         {
            buttons.count[joystickButtons::Axis::RIGHT_HORIZONTAL]++;
-           buttons.count[joystickButtons::Axis::LEFT_VERTICAL]++; //yError() << "both are pressed!!!";
+           buttons.count[joystickButtons::Axis::RIGHT_VERTICAL]++; //yError() << "both are pressed!!!";
         }
-        else if(buttons.isPressed(joystickButtons::Axis::LEFT_VERTICAL))
+        else if(buttons.isPressed(joystickButtons::Axis::RIGHT_VERTICAL))
         {
             buttons.count[joystickButtons::Axis::RIGHT_HORIZONTAL]=0;
-            buttons.count[joystickButtons::Axis::LEFT_VERTICAL]++;//yError() << "left vert pressed!!!";
+            buttons.count[joystickButtons::Axis::RIGHT_VERTICAL]++; //yError() << "right vert pressed!!!";
         }
         else if (buttons.isPressed(joystickButtons::Axis::RIGHT_HORIZONTAL))
         {
             buttons.count[joystickButtons::Axis::RIGHT_HORIZONTAL]++;
-            buttons.count[joystickButtons::Axis::LEFT_VERTICAL]=0; //yError() << "RIGHT_HORIZONTAL pressed!!!";
+            buttons.count[joystickButtons::Axis::RIGHT_VERTICAL]=0; //yError() << "RIGHT_HORIZONTAL pressed!!!";
         }
         else
         {
             buttons.count[joystickButtons::Axis::RIGHT_HORIZONTAL]=0; //yError() << "NONE pressed!!!";
-            buttons.count[joystickButtons::Axis::LEFT_VERTICAL]=0;
+            buttons.count[joystickButtons::Axis::RIGHT_VERTICAL]=0;
         }
         return true;
     };
 
     bool buttonsValuesHasMeaning(void) //the application can use the values of buttons only if almost one of them is valid.
     {
-        if( (!buttons.isValid(joystickButtons::Axis::RIGHT_HORIZONTAL)) && (!buttons.isValid(joystickButtons::Axis::LEFT_VERTICAL)) )
+        if( (!buttons.isValid(joystickButtons::Axis::RIGHT_HORIZONTAL)) && (!buttons.isValid(joystickButtons::Axis::RIGHT_VERTICAL)) )
             return false;
         else
             return true;
