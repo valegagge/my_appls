@@ -56,13 +56,14 @@ private:
     yarp::os::RpcClient m_worldInterfacePort;
     yarp::os::BufferedPort<yarp::os::Bottle> m_port_joystick_input;
 
-    double m_gain_fowardBack = 0.001; //??? da decidere ==> ora sposto di 10 cm
-    double m_gain_leftRight = 0.001; //??? da decidere ==> ora sposto di 10 cm
-
+    double m_gain_fowardBack = 0.001;
+    double m_gain_leftRight = 0.001;
+    double m_gain_rotation = 0.001;
 
     void saturate(double& v, double sat_lim);
     void printCfg(void);
     bool createBall(void);
+    bool createBox(void);
 
 };
 

@@ -124,6 +124,7 @@ public :
             //yError() << "securityButton is NOT valid!!!";
             buttons.count[joystickButtons::Axis::RIGHT_VERTICAL] = 0;
             buttons.count[joystickButtons::Axis::RIGHT_HORIZONTAL] = 0;
+            buttons.count[joystickButtons::Axis::LEFT_HORIZONTAL] = 0;
             return true;
         }
 
@@ -148,12 +149,22 @@ public :
             buttons.count[joystickButtons::Axis::RIGHT_HORIZONTAL]=0; //yError() << "NONE pressed!!!";
             buttons.count[joystickButtons::Axis::RIGHT_VERTICAL]=0;
         }
+
+        if(buttons.isPressed(joystickButtons::Axis::LEFT_HORIZONTAL))
+        {
+            buttons.count[joystickButtons::Axis::LEFT_HORIZONTAL]++; //yError() << "LEFT_HORIZONTAL pressed!!!";
+        }
+        else
+        {
+            buttons.count[joystickButtons::Axis::LEFT_HORIZONTAL]=0;
+        }
         return true;
     };
 
     bool buttonsValuesHasMeaning(void) //the application can use the values of buttons only if almost one of them is valid.
     {
-        if( (!buttons.isValid(joystickButtons::Axis::RIGHT_HORIZONTAL)) && (!buttons.isValid(joystickButtons::Axis::RIGHT_VERTICAL)) )
+        if( (!buttons.isValid(joystickButtons::Axis::RIGHT_HORIZONTAL)) && (!buttons.isValid(joystickButtons::Axis::RIGHT_VERTICAL))
+            && (!buttons.isValid(joystickButtons::Axis::LEFT_HORIZONTAL)) )
             return false;
         else
             return true;
