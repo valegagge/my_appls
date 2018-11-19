@@ -51,7 +51,7 @@
 
         <module>
                 <name>ballJoystickControl</name>
-                <parameters>--ballName pallina2 --gain_fowardBack 0.0004 --gain_leftRight 0.0004 </parameters>
+                <parameters>--ballName pallina2 --gain_x_axis 0.0004 --gain_y_axis 0.0004 --gain_yaw 0.001 </parameters>
                 <node>vale</node>
         </module>
                
@@ -75,7 +75,7 @@
 
         <connection>
                 <from>/pf3dTracker/data:o</from>
-                <to>/follower/ballPoints:i</to>
+                <to>/follower/ballPoint:i</to>
                 <protocol>udp</protocol>
         </connection>
 
