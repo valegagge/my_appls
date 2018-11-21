@@ -16,8 +16,8 @@
  * Public License for more details
  */
 
-#ifndef BALLJOYSTICKCONTROL_H
-#define BALLJOYSTICKCONTROL_H
+#ifndef GENERICOBJJOYSTICKCONTROL_H
+#define GENERICOBJJOYSTICKCONTROL_H
 
 #include <yarp/os/RFModule.h>
 #include <yarp/os/RpcClient.h>
@@ -27,12 +27,23 @@
 
 #include "joystick.h"
 
+namespace ObjectTypes
+{
+    enum class eValues {ball, box, none};
+    static const std::string ball_str = "ball";
+    static const std::string box_str = "box";
+    static const std::string none_str ="none";
 
-class ballJoystickControl: public yarp::os::RFModule
+    eValues string2value(std::string &str);
+    std::string value2string(eValues val);
+};
+
+
+class GenericObjJoystickControl: public yarp::os::RFModule
 {
 
 public:
-    ballJoystickControl();
+    GenericObjJoystickControl();
 
     bool configure(yarp::os::ResourceFinder &rf);
 
@@ -46,12 +57,13 @@ public:
 
 private:
 
-    ballJoystickInterpreter joystickMng;
+    GeniricObjJoystickInterpreter joystickMng;
 
     double              m_threadPeriod;
-    std::string         m_ballName;
+    std::string         m_objName;
     joystickButtons     buttons;
-    bool                m_ballIsCreated;
+    bool                m_objIsCreated;
+    ObjectTypes::eValues m_objType;
 
     yarp::os::RpcClient m_worldInterfacePort;
     yarp::os::BufferedPort<yarp::os::Bottle> m_port_joystick_input;
@@ -67,4 +79,4 @@ private:
 
 };
 
-#endif //BALLJOYSTICKCONTROL_H
+#endif //GENERICOBJJOYSTICKCONTROL_H

@@ -23,7 +23,7 @@
 
 #include <yarp/os/Log.h>
 
-#include "ballJoystickControl.h"
+#include "GenericObjJoystickControl.h"
 
 
 using namespace std;
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     ResourceFinder rf;
     rf.setVerbose(true);
     rf.setDefaultContext("SIM_CER_ROBOT");
-    rf.setDefaultConfigFile("ballJoystickCtrl.ini");
+    rf.setDefaultConfigFile("GenericObjJoystickControl.ini");
     rf.configure(argc,argv);
 
     if (rf.check("help"))
@@ -46,12 +46,13 @@ int main(int argc, char *argv[])
         yInfo("Possible options: ");
         yInfo("'robot <name>' the robot name for remote connection.");
         yInfo("'local <name>' the local port name.");
-        yInfo("'ballName <name>' the name used to identify the ball in gazebo. At startup the module try to craete a sphere with 'name'. In case of error ask to the use if he/she wanto to contiue.");
-        yInfo("'gain_x_axis <value>' the gain to apply to the value read by joystick control to move the ball on X axis. Default value is 0.001");
-        yInfo("'gain_y_axis <value>' the gain to apply to the value read by joystick control to move the ball on Y axis. Default value is 0.001.");
-
+        yInfo("'create <object_type>', where object_type can vule 'ball', 'box' or 'none'. If 'none',  the module doesn't create anything and moves the object with the name expressed in 'objName' parameter.");
+        yInfo("'objName <name>' the name used to identify the object in gazebo.");
+        yInfo("'gain_x_axis <value>' the gain to apply to the value read by joystick control to move the object on X axis. Default value is 0.001");
+        yInfo("'gain_y_axis <value>' the gain to apply to the value read by joystick control to move the object on Y axis. Default value is 0.001.");
+        yInfo("'gain_yaw <value>' the gain to apply to the value read by joystick control to move the object on Y axis. Default value is 0.001.");
         yInfo("''");
-        yInfo("example: BallJoystickCtrl --robot SIM_CER_ROBOT --ballName myBall --gain_x_axis 0.0004 --gain_y_axis 0.0004");
+        yInfo("example: GenericObjJoystickControl --robot SIM_CER_ROBOT --objName myObj --create ball --gain_x_axis 0.0004 --gain_y_axis 0.0004");
         return 0;
     }
 
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    ballJoystickControl mod;
+    GenericObjJoystickControl mod;
 
     return mod.runModule(rf);
 }

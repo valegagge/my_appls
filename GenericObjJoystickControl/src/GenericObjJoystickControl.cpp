@@ -20,23 +20,44 @@
 #include <yarp/os/LogStream.h>
 #include <math.h>
 #include <iostream>
-#include "ballJoystickControl.h"
+#include "GenericObjJoystickControl.h"
 
 
 using namespace yarp::os;
 using namespace std;
 
-ballJoystickControl::ballJoystickControl():m_threadPeriod(0.01), m_ballName("sphere1"), m_ballIsCreated(false)
+
+
+ObjectTypes::eValues ObjectTypes::string2value(std::string &str)
+{
+    if(str == ball_str) {return(eValues::ball);}
+    else if(str == box_str){return(eValues::box);}
+    else{return(eValues::none);}
+}
+
+std::string ObjectTypes::value2string(ObjectTypes::eValues val)
+{
+    switch(val)
+    {
+        case eValues::ball: return(ball_str);
+        case eValues::box:  return(box_str);
+        default:            return(none_str);
+    }
+}
+
+
+
+GenericObjJoystickControl::GenericObjJoystickControl():m_threadPeriod(0.01), m_objName("myObject"), m_objIsCreated(false), m_objType(ObjectTypes::eValues::none)
 {;}
 
-bool ballJoystickControl::configure(ResourceFinder &rf)
+bool GenericObjJoystickControl::configure(ResourceFinder &rf)
 {
     string ctrlName;
     string robotName;
     string localName;
 
     // get params from the RF
-    ctrlName = rf.check("local", Value("ballJoystickControl")).asString();
+    ctrlName = rf.check("local", Value("genericObjJoystickControl")).asString();
     robotName = rf.check("robot", Value("SIM_CER_ROBOT")).asString();
 
     //localName = "/" + ctrlName+ "/rpc";
@@ -52,7 +73,10 @@ bool ballJoystickControl::configure(ResourceFinder &rf)
         return false;
     }
 
-    m_ballName = rf.check("ballName", Value("sphere1")).asString();
+    m_objName = rf.check("objName", Value("myObject")).asString();
+    string objtype_str = rf.check("create", Value(ObjectTypes::none_str.c_str())).asString();
+
+    m_objType = ObjectTypes::string2value(objtype_str);
 
     m_gain_fowardBack = rf.check("gain_x_axis", Value(0.001)).asDouble();
     m_gain_leftRight = rf.check("gain_y_axis", Value(0.001)).asDouble();
@@ -63,7 +87,7 @@ bool ballJoystickControl::configure(ResourceFinder &rf)
     return true;
 }
 
-bool ballJoystickControl::createBall(void)
+bool GenericObjJoystickControl::createBall(void)
 {
 
     yDebug() << "I'm about to create the red ball...";
@@ -83,21 +107,21 @@ bool ballJoystickControl::createBall(void)
     cmd.addInt(0); //green
     cmd.addInt(0); //blue
     cmd.addString(""); //frame name
-    cmd.addString(m_ballName);
+    cmd.addString(m_objName);
     m_worldInterfacePort.write(cmd, ans);
     //yDebug() << "BALL-JOYSTICK-CONTROL: makeSphere= " << cmd.toString() << "  Ans=" << ans.toString();
-    if(ans.toString() == m_ballName)
-        m_ballIsCreated = true;
+    if(ans.toString() == m_objName)
+        m_objIsCreated = true;
     else
-        m_ballIsCreated = false;
-    return m_ballIsCreated;
+        m_objIsCreated = false;
+    return m_objIsCreated;
 
 }
 
 
 
 
-bool ballJoystickControl::createBox(void)
+bool GenericObjJoystickControl::createBox(void)
 {
 
     yDebug() << "I'm about to create the red box...";
@@ -119,30 +143,30 @@ bool ballJoystickControl::createBox(void)
     cmd.addInt(0); //green
     cmd.addInt(0); //blue
     cmd.addString(""); //frame name
-    cmd.addString(m_ballName);
+    cmd.addString(m_objName);
     m_worldInterfacePort.write(cmd, ans);
     yDebug() << "BALL-JOYSTICK-CONTROL: makeBox= " << cmd.toString() << "  Ans=" << ans.toString();
-    if(ans.toString() == m_ballName)
-        m_ballIsCreated = true;
+    if(ans.toString() == m_objName)
+        m_objIsCreated = true;
     else
-        m_ballIsCreated = false;
-    return m_ballIsCreated;
+        m_objIsCreated = false;
+    return m_objIsCreated;
 
 }
-void ballJoystickControl::printCfg(void)
+void GenericObjJoystickControl::printCfg(void)
 {
     yDebug() << "I'm about to start with following configuration: ";
-    yDebug() << "ballName=" << m_ballName << " gain_fowardBack=" << m_gain_fowardBack << "gain_leftRight=" << m_gain_leftRight << "gain_yaw_rotation="<< m_gain_rotation;
+    yDebug() << "ObjName=" << m_objName << "ObjType=" << ObjectTypes::value2string(m_objType) << "gain_x_axis=" << m_gain_fowardBack << "gain_y_axis=" << m_gain_leftRight << "gain_yaw_rotation="<< m_gain_rotation;
 }
 
-bool ballJoystickControl::respond(const Bottle& command, Bottle& reply)
+bool GenericObjJoystickControl::respond(const Bottle& command, Bottle& reply)
 {
     reply.clear();
     reply.addString("Unknown command.");
     return true;
 }
 
-bool ballJoystickControl::close()
+bool GenericObjJoystickControl::close()
 {
     m_worldInterfacePort.interrupt();
     m_worldInterfacePort.close();
@@ -152,27 +176,35 @@ bool ballJoystickControl::close()
     return true;
 }
 
-double ballJoystickControl::getPeriod()
+double GenericObjJoystickControl::getPeriod()
 {
     return m_threadPeriod;
 }
 
-bool ballJoystickControl::updateModule()
+bool GenericObjJoystickControl::updateModule()
 {
 
-    if( (!m_ballIsCreated) && (m_worldInterfacePort.asPort().getOutputCount() >0 ))
+    if( (!m_objIsCreated) && (m_worldInterfacePort.asPort().getOutputCount() >0 ))
     {
-        bool ret = createBall();
+        bool ret = false;
+        switch(m_objType)
+        {
+            case ObjectTypes::eValues::ball: ret = createBall();break;
+            case ObjectTypes::eValues::box: ret = createBox();break;
+            default : ret = true; m_objIsCreated=true;//do nothing
+        };
+
+
         if(!ret)
         {
-            yWarning() << "ATTENTION: I could NOT create the ball!!";
+            yWarning() << "ATTENTION: I could NOT create the object!!";
             yWarning() << "Do you want continue anyway??";
             char input[255];
                 cin >> input;
                 if (input[0]=='y' || input[0]=='Y')
                 {
-                    m_ballIsCreated = true;
-                    yInfo()<< "OK! You need to create a ball with name " << m_ballName;
+                    m_objIsCreated = true;
+                    yInfo()<< "OK! You need to create an object with name " << m_objName;
                 }
                 else
                 {
@@ -182,7 +214,10 @@ bool ballJoystickControl::updateModule()
         }
         else
         {
-            yInfo() << "Ball has been created with name " << m_ballName << " !!";
+            if(m_objType != ObjectTypes::eValues::none)
+                yInfo() << ObjectTypes::value2string(m_objType) << " has been created with name " << m_objName << " !!";
+            else
+                yInfo()  << "I didn't create any object. I'm ready to move " << m_objName << " !!";
         }
 
     }
@@ -223,7 +258,7 @@ bool ballJoystickControl::updateModule()
     cmdSet.clear();
     ansSet.clear();
     cmdGet.addString("getPose");
-    cmdGet.addString(m_ballName);
+    cmdGet.addString(m_objName);
     m_worldInterfacePort.write(cmdGet, ansGet);
     //read the answer
     double x = ansGet.get(0).asDouble();
@@ -238,7 +273,7 @@ bool ballJoystickControl::updateModule()
 
     //send command for new position
     cmdSet.addString("setPose");
-    cmdSet.addString(m_ballName);
+    cmdSet.addString(m_objName);
     cmdSet.addDouble(x);
     cmdSet.addDouble(y);
     cmdSet.addDouble(ansGet.get(2).asDouble()); // z
@@ -252,7 +287,7 @@ bool ballJoystickControl::updateModule()
 }
 
 
-void ballJoystickControl::saturate(double& v, double sat_lim)
+void GenericObjJoystickControl::saturate(double& v, double sat_lim)
 {
     if (v < -sat_lim) v = -sat_lim;
     if (v > sat_lim) v = sat_lim;

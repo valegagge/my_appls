@@ -10,11 +10,11 @@ cmake_minimum_required(VERSION 3.0)
 find_package(YARP REQUIRED)
 
 # set up our program
-add_executable(ballJoystickControl ./src/ballJoystickControl.h ./src/ballJoystickControl.cpp  ./src/joystick.h ./src/main.cpp )
-#add_executable(ballJoystickControl joystick.h ballJoystickControl.h ballJoystickControl.cpp main.cpp )
+add_executable(GenericObjJoystickControl ./src/GenericObjJoystickControl.h ./src/GenericObjJoystickControl.cpp  ./src/joystick.h ./src/main.cpp )
+#add_executable(GenericObjJoystickControl joystick.h GenericObjJoystickControl.h GenericObjJoystickControl.cpp main.cpp )
 # link with YARP libraries
 
-target_link_libraries(ballJoystickControl ${YARP_LIBRARIES})
+target_link_libraries(GenericObjJoystickControl ${YARP_LIBRARIES})
 
 #set(PROJECTNAME BallJoystickControl)
 #project(${PROJECTNAME})

@@ -50,8 +50,8 @@
         </module>
 
         <module>
-                <name>ballJoystickControl</name>
-                <parameters>--ballName pallina2 --gain_x_axis 0.0004 --gain_y_axis 0.0004 --gain_yaw 0.001 </parameters>
+                <name>GenericObjJoystickControl</name>
+                <parameters>--objName pallina --create ball--gain_x_axis 0.0004 --gain_y_axis 0.0004 --gain_yaw 0.001 </parameters>
                 <node>vale</node>
         </module>
                
@@ -93,12 +93,12 @@
         
         <connection>
                 <from>/joystickCtrl:o</from>
-                <to>/ballJoystickControl/joiystick:i</to>
+                <to>/genericObjJoystickControl/joiystick:i</to>
                 <protocol>udp</protocol>
         </connection>
         
         <connection>
-                <from>/ballJoystickControl/rpc</from>
+                <from>/genericObjJoystickControl/rpc</from>
                 <to>/world_input_port</to>
                 <protocol>tcp</protocol>
         </connection>

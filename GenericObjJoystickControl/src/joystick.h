@@ -81,7 +81,7 @@ public :
 
 
 
-class ballJoystickInterpreter
+class GeniricObjJoystickInterpreter
 {
 public :
     joystickButtons buttons;
