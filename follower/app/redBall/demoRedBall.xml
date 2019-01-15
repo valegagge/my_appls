@@ -51,7 +51,7 @@
 
         <module>
                 <name>GenericObjJoystickControl</name>
-                <parameters>--objName pallina --create ball--gain_x_axis 0.0004 --gain_y_axis 0.0004 --gain_yaw 0.001 </parameters>
+                <parameters>--objName pallina --create ball --gain_x_axis 0.0004 --gain_y_axis 0.0004 --gain_yaw 0.001 </parameters>
                 <node>vale</node>
         </module>
                
