@@ -132,7 +132,8 @@ void Follower::followBall(void)
     sendCommand2BaseControl(0.0, lin_vel, ang_vel );
 
     //5. send commands to gaze control
-    sendCommand2GazeControl_lookAtPixel(ballPointU, ballPointV);
+    //sendCommand2GazeControl_lookAtPixel(ballPointU, ballPointV);
+    sendCommand2GazeControl_lookAtPoint(pointBallOutput);
 }
 
 
@@ -411,6 +412,28 @@ bool Follower::sendCommand2GazeControl_lookAtPixel(double u, double v)
     val.addDouble(u);
     val.addDouble(v);
     p.put("target-location",location.get(0));
+    m_outputPort2gazeCtr.write();
+
+    return true;
+
+}
+
+
+bool Follower::sendCommand2GazeControl_lookAtPoint(const  yarp::sig::Vector &x)
+{
+    if (m_outputPort2gazeCtr.getOutputCount() == 0)
+        return true;
+
+    Property &p = m_outputPort2gazeCtr.prepare();
+    p.clear();
+
+    Bottle target;
+    target.addList().read(x);
+
+    p.put("control-frame","left");
+    p.put("target-type","cartesian");
+    p.put("target-location",target.get(0));
+
     m_outputPort2gazeCtr.write();
 
     return true;

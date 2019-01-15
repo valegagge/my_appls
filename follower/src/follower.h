@@ -102,6 +102,7 @@ private:
     bool sendCommand2BaseControl(double linearDirection, double linearVelocity, double angularVelocity);
     bool sendCommand2GazeControl(double x, double y, double z);
     bool sendCommand2GazeControl_lookAtPixel(double u, double v);
+    bool sendCommand2GazeControl_lookAtPoint(const  yarp::sig::Vector &x);
 
 
     // ---- TEST STUFF
