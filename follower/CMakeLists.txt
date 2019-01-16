@@ -2,6 +2,6 @@ cmake_minimum_required(VERSION 3.0)
 # find YARP
 find_package(YARP REQUIRED)
 # set up our program
-add_executable(follower ./src/follower.h ./src/follower.cpp ./src/main.cpp )
+add_executable(follower ./src/follower.h ./src/TargetRetriver.h ./src/Ball3DPointRetriver.cpp ./src/follower.cpp ./src/main.cpp )
 # link with YARP libraries
 target_link_libraries(follower ${YARP_LIBRARIES})

@@ -12,6 +12,8 @@
 
 #include <string>
 
+#include "TargetRetriver.h"
+
 class FollowerConfig
 {
 public:
@@ -69,6 +71,7 @@ private:
 
     yarp::dev::IFrameTransform* m_transformClient;
     yarp::dev::PolyDriver      m_driver;
+    Ball3DPPointRetriver       m_pointRetriver;
 
 #if 0
     // correct but maybe .. i try to invert (as suggested by silvio)

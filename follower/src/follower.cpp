@@ -12,6 +12,8 @@
 #include <math.h>
 
 #include "follower.h"
+
+
 #include "../../../yarp/src/libYARP_OS/include/yarp/os/Bottle.h"
 using namespace std;
 using namespace yarp::os;
@@ -75,14 +77,10 @@ void Follower::followBall(void)
         return;
     }
 
-    //2. read ball poosition
-    Bottle *b = m_inputPort.read();
+    //2. read target poosition
+    Target_t pointInput = m_pointRetriver.getTarget();
 
-//     yDebug() << "Vedo pallina " << b->get(6).asDouble();
-//     yDebug() << "pos pallina" << b->get(0).asDouble() << b->get(1).asDouble() << b->get(2).asDouble();
-    bool ballIsTracked = (b->get(6).asDouble() == 1.0) ? true : false;
-
-    if(!ballIsTracked)
+    if(!pointInput.second)
     {
         yError() << "FOLLOWER: I can't see the ball!!!";
         return;
@@ -91,12 +89,9 @@ void Follower::followBall(void)
     
     //3. transform the ball-point from camera point of view to base point of view.
     yarp::sig::Vector pointBallInput(3), pointBallOutput;
-    pointBallInput[0] = b->get(0).asDouble();
-    pointBallInput[1] = b->get(1).asDouble();
-    pointBallInput[2] = b->get(2).asDouble();
-
-    double ballPointU = b->get(4).asDouble(); //u and V are the the coordinate x any of image.
-    double ballPointV = b->get(5).asDouble();
+    pointBallInput[0] = pointInput.first[0];
+    pointBallInput[1] = pointInput.first[1];
+    pointBallInput[2] = pointInput.first[2];
 
     if(!getBallPointTrasformed(pointBallInput, pointBallOutput))
     {
@@ -119,14 +114,14 @@ void Follower::followBall(void)
         lin_vel = m_cfg.factorDist2Vel *distance;
     }
     else
-        cout << "the Distance is under threshold!! " <<endl; //only for debug pupose
+        cout << "the Distance is under threshold!! " <<endl; //only for debug purpose
 
 
 
     if(fabs(angle) >m_cfg.angleThreshold)
         ang_vel = m_cfg.factorAng2Vel * angle;
     else
-        cout << "the angle is under threshold!! " <<endl; // //only for debug pupose
+        cout << "the angle is under threshold!! " <<endl; // //only for debug purpose
 
 
     sendCommand2BaseControl(0.0, lin_vel, ang_vel );
@@ -220,11 +215,17 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
 
-    if(! m_inputPort.open("/follower/" + m_cfg.inputPortName +":i"))
+    if(! m_pointRetriver.init("/follower/" + m_cfg.inputPortName +":i"))
     {
-        yError() << "Error opening input port";
+        yError() << "Error in initializing Ball3dRetriver";
         return false;
     }
+
+//     if(! m_inputPort.open("/follower/" + m_cfg.inputPortName +":i"))
+//     {
+//         yError() << "Error opening input port";
+//         return false;
+//     }
 
     if(!m_outputPort2baseCtr.open("/follower/" + m_cfg.outputPortName + ":o"))
     {
@@ -253,8 +254,7 @@ bool Follower::interruptModule()
     m_outputPortJoystick.interrupt();
     m_outputPortJoystick.close();
 
-    m_inputPort.interrupt();
-    m_inputPort.close();
+    m_pointRetriver.deinit();
 
     m_outputPort2baseCtr.interrupt();
     m_outputPort2baseCtr.close();
