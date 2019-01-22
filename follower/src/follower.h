@@ -13,6 +13,7 @@
 #include <string>
 
 #include "TargetRetriver.h"
+#include "Person3DRetriver.h"
 
 class FollowerConfig
 {
@@ -71,7 +72,8 @@ private:
 
     yarp::dev::IFrameTransform* m_transformClient;
     yarp::dev::PolyDriver      m_driver;
-    Ball3DPPointRetriver       m_pointRetriver;
+    //Ball3DPPointRetriver       m_pointRetriver;
+    Person3DPPointRetriver     m_pointRetriver;
 
 #if 0
     // correct but maybe .. i try to invert (as suggested by silvio)
@@ -81,7 +83,7 @@ private:
     // marco.accame: ok, it works.
     // conclusion: there is a bug in the methods. it is used an inverse matrix.
     const std::string target_frame_id = "head_leopard_left";
-    const std::string source_frame_id = "base_link";
+    const std::string source_frame_id = "mobile_base_body_link";//"base_link";
 #endif
     yarp::os::BufferedPort<yarp::os::Bottle> m_inputPort; //From this port I receive the data from Pf3dtraker
     yarp::os::BufferedPort<yarp::os::Bottle>  m_outputPort2baseCtr; //I send commands to baseControl interruptModule

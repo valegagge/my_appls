@@ -78,12 +78,17 @@ void Follower::followBall(void)
     }
 
     //2. read target poosition
+//    yDebug() << "FOLLOWER: tray to get the point from person retriver!!!";
     Target_t pointInput = m_pointRetriver.getTarget();
 
     if(!pointInput.second)
     {
         yError() << "FOLLOWER: I can't see the ball!!!";
         return;
+    }
+    else
+    {
+        yDebug() << "FOLLOWER: ho un target valido!!!";
     }
 
     

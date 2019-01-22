@@ -23,7 +23,7 @@ bool TargetRetriver::init(std::string inputPortName)
 {
     if(! m_inputPort.open(inputPortName))
     {
-        yError() << "Ball3DPPointRetriver:Error opening input port";
+        yError() << "TargetPointRetriver:Error opening input port";
         return false;
     }
     return true;
