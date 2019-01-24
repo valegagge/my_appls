@@ -61,12 +61,27 @@ void Follower::sendOutputLikeJoystick()
 bool Follower::updateModule()
 {
 //    sendOutput();
-    followBall();
+    Target_t targetpoint({0,0,0}, false);
+
+
+    switch(m_targetType)
+    {
+        case FollowerTargetType::person:
+        { targetpoint= (dynamic_cast<Person3DPPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
+
+        case FollowerTargetType::redball:
+        { targetpoint= (dynamic_cast<Ball3DPPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
+
+        default: break;
+    };
+
+    followTarget(targetpoint);
 //    moveRobot();
    return true;
 }
 
-void Follower::followBall(void)
+
+void Follower::followTarget(Target_t &target)
 {
     //1. get the transform matrix
     //this step is not necessary... we use it only for debug purpose
@@ -78,42 +93,39 @@ void Follower::followBall(void)
     }
 
     //2. read target poosition
-//    yDebug() << "FOLLOWER: tray to get the point from person retriver!!!";
-    Target_t pointInput = m_pointRetriver.getTarget();
-
-    if(!pointInput.second)
+    if(!target.second)
     {
-        yError() << "FOLLOWER: I can't see the ball!!!";
+        //yError() << "FOLLOWER: I can't see the ball!!!";
         return;
     }
     else
     {
-        yDebug() << "FOLLOWER: ho un target valido!!!";
+        yDebug() << "FOLLOWER: ho un target valido!!!" << target.first[0] << target.first[1] << target.first[2] ;
     }
 
     
     //3. transform the ball-point from camera point of view to base point of view.
-    yarp::sig::Vector pointBallInput(3), pointBallOutput;
-    pointBallInput[0] = pointInput.first[0];
-    pointBallInput[1] = pointInput.first[1];
-    pointBallInput[2] = pointInput.first[2];
+    yarp::sig::Vector targetOnCamFrame(3), targetOnBaseFrame;
+    targetOnCamFrame[0] = target.first[0];
+    targetOnCamFrame[1] = target.first[1];
+    targetOnCamFrame[2] = target.first[2];
 
-    if(!getBallPointTrasformed(pointBallInput, pointBallOutput))
+    if(!getBallPointTrasformed(targetOnCamFrame, targetOnBaseFrame))
     {
         yError() << "FOLLOWER: error in getBallPointTrasformed()";
         return;
     }
 
     //4. x axis is the first element, y is on second. (In order to calculate the distance see mobile base frame)
-    double distance =  sqrt(pow(pointBallOutput[0], 2) + pow(pointBallOutput[1], 2));
+    double distance =  sqrt(pow(targetOnBaseFrame[0], 2) + pow(targetOnBaseFrame[1], 2));
 
     const double RAD2DEG  = 180.0/M_PI;
-    double angle = atan2(pointBallOutput[1], pointBallOutput[0]) * RAD2DEG;
+    double angle = atan2(targetOnBaseFrame[1], targetOnBaseFrame[0]) * RAD2DEG;
 
     double lin_vel  = 0.0;
     double ang_vel = 0.0;
 
-
+    yDebug() << "distance=" << distance ;
     if(distance > m_cfg.distanceThreshold)
     {
         lin_vel = m_cfg.factorDist2Vel *distance;
@@ -132,14 +144,18 @@ void Follower::followBall(void)
     sendCommand2BaseControl(0.0, lin_vel, ang_vel );
 
     //5. send commands to gaze control
+//     double ballPointU, ballPointV;
+//     (dynamic_cast<Ball3DPPointRetriver*>(m_pointRetriver_ptr))->getTargetPixelCoord(ballPointU, ballPointV);
+    //yDebug() << "Point of image: " << ballPointU << ballPointV;
     //sendCommand2GazeControl_lookAtPixel(ballPointU, ballPointV);
-    sendCommand2GazeControl_lookAtPoint(pointBallOutput);
+    yDebug() << "Look at point " << targetOnCamFrame.toString();
+    sendCommand2GazeControl_lookAtPoint(targetOnCamFrame);
 }
 
 
 bool Follower::getMatrix(yarp::sig::Matrix &transform)
 {
-    bool res = m_transformClient->getTransform (target_frame_id, source_frame_id, transform);
+    bool res = m_transformClient->getTransform (m_targetFrameId, m_sourceFrameId, transform);
     if(res)
     {
 //         yDebug() << "FOLLOWER: i get the transform matrix:"; // << transform.toString();
@@ -156,7 +172,7 @@ bool Follower::getMatrix(yarp::sig::Matrix &transform)
 
 bool Follower::getBallPointTrasformed(yarp::sig::Vector &pointBallInput, yarp::sig::Vector &pointBallOutput)
 {
-    bool res = m_transformClient->transformPoint(target_frame_id, source_frame_id, pointBallInput, pointBallOutput);
+    bool res = m_transformClient->transformPoint(m_targetFrameId, m_sourceFrameId, pointBallInput, pointBallOutput);
     if(res)
     {
 //        yDebug() << "FOLLOWER: point (" << pointBallInput.toString() << ") has been transformed in (" << pointBallOutput.toString() << ")";
@@ -197,6 +213,7 @@ bool Follower::readConfig(yarp::os::ResourceFinder &rf, FollowerConfig &cfg)
         if (config_group.check("outputPort"))  { cfg.outputPortName = config_group.find("outputPort").asString(); }
         if (config_group.check("distanceThreshold"))  { cfg.distanceThreshold = config_group.find("distanceThreshold").asDouble(); }
         if (config_group.check("angleThreshold"))  { cfg.angleThreshold = config_group.find("angleThreshold").asDouble(); }
+        if (config_group.check("targetType"))  { cfg.targetType = config_group.find("targetType").asString(); }
     }
 
     cfg.print();
@@ -220,17 +237,29 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
 
-    if(! m_pointRetriver.init("/follower/" + m_cfg.inputPortName +":i"))
+
+
+    yDebug() << "targetType is" << m_cfg.targetType;
+
+    if(m_cfg.targetType == "redball")
     {
-        yError() << "Error in initializing Ball3dRetriver";
-        return false;
+        m_pointRetriver_ptr = new Ball3DPPointRetriver();
+        m_targetFrameId = m_redBallFrameId;
+        m_targetType = FollowerTargetType::redball;
+    }
+    else //person or default
+    {
+        m_pointRetriver_ptr = new Person3DPPointRetriver();
+        m_targetFrameId = m_personFrameId;
+        m_targetType = FollowerTargetType::person;
     }
 
-//     if(! m_inputPort.open("/follower/" + m_cfg.inputPortName +":i"))
-//     {
-//         yError() << "Error opening input port";
-//         return false;
-//     }
+
+    if(! m_pointRetriver_ptr->init("/follower/" + m_cfg.inputPortName +":i"))
+    {
+        yError() << "Error in initializing the Target Retriver";
+        return false;
+    }
 
     if(!m_outputPort2baseCtr.open("/follower/" + m_cfg.outputPortName + ":o"))
     {
@@ -259,7 +288,7 @@ bool Follower::interruptModule()
     m_outputPortJoystick.interrupt();
     m_outputPortJoystick.close();
 
-    m_pointRetriver.deinit();
+    m_pointRetriver_ptr->deinit();
 
     m_outputPort2baseCtr.interrupt();
     m_outputPort2baseCtr.close();
@@ -279,7 +308,7 @@ bool Follower::close()
 }
 
 
-Follower::Follower():m_transformClient(nullptr)
+Follower::Follower():m_transformClient(nullptr), m_targetType(FollowerTargetType::person), m_pointRetriver_ptr(nullptr)
 {;}
 Follower::~Follower(){;}
 
@@ -432,12 +461,18 @@ bool Follower::sendCommand2GazeControl_lookAtPoint(const  yarp::sig::Vector &x)
     Property &p = m_outputPort2gazeCtr.prepare();
     p.clear();
 
-    Bottle target;
-    target.addList().read(x);
+    Bottle target =  yarp::os::Bottle();
+    Bottle &val = target.addList();
+    val.addList().read(x);
 
-    p.put("control-frame","left");
+    if(m_targetType==FollowerTargetType::person)
+        p.put("control-frame","depth_center");
+    else
+        p.put("control-frame","left");
+
     p.put("target-type","cartesian");
     p.put("target-location",target.get(0));
+    yDebug() << "Command to gazectrl: " << p.toString();
 
     m_outputPort2gazeCtr.write();
 

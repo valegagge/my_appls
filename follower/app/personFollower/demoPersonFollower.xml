@@ -28,7 +28,7 @@
         <module>
                 <name>skeletonRetriever</name>
                 <parameters> --camera::fov "(58.5900911722829 45.6422405248008)"</parameters>
-                <node>r1-console-linux</node>
+                <node>vale</node>
         </module>
 
         <module>
@@ -46,7 +46,7 @@
   
         <module>
                 <name>follower</name>
-                <parameters>--from /usr/local/src/robot/my_appls/follower/app/conf/follower_SIM.ini</parameters>
+                <parameters>--from $ROBOT_CODE/my_appls/follower/app/conf/follower_SIM.ini</parameters>
                 <node>vale</node>
         </module>
 
@@ -91,14 +91,8 @@
 
         <connection>
             <from>/skeletonRetriever/viewer:o</from>
-            <to>/follower/ballPoint:i</to>
+            <to>/follower/targetPoints:i</to>
             <protocol>fast_tcp</protocol>
-        </connection>
-
-        <connection>
-                <from>/pf3dTracker/data:o</from>
-                <to>/follower/ballPoints:i</to>
-                <protocol>udp</protocol>
         </connection>
 
         <connection>
@@ -107,7 +101,7 @@
                 <protocol>udp</protocol>
         </connection>
 
-		<connection>
+	<connection>
                 <from>/follower/gazetargets:o</from>
                 <to>/cer_gaze-controller/target:i</to>
                 <protocol>udp</protocol>
@@ -122,6 +116,12 @@
         <connection>
                 <from>/genericObjJoystickControl/rpc</from>
                 <to>/world_input_port</to>
+                <protocol>tcp</protocol>
+        </connection>
+
+	<connection>
+                <from>/yarpOpenPose/image:o</from>
+                <to>/viewer</to>
                 <protocol>tcp</protocol>
         </connection>
 </application>

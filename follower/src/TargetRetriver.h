@@ -37,9 +37,13 @@ class Ball3DPPointRetriver : public TargetRetriver
 {
 public:
     Target_t getTarget(void);
-//     Ball3DPPointRetriver();
+     Ball3DPPointRetriver();
 //     ~Ball3DPPointRetriver();
+    void getTargetPixelCoord(double &u, double &v);
 private:
+
+    double m_ballPointU;
+    double m_ballPointV;
 };
 
 #endif

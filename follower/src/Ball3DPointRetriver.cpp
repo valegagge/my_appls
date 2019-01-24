@@ -37,7 +37,7 @@ bool TargetRetriver::deinit(void)
 }
 
 
-// Ball3DPPointRetriver::Ball3DPPointRetriver() {;}
+Ball3DPPointRetriver::Ball3DPPointRetriver(): m_ballPointU(0.0), m_ballPointV(0.0) {;}
 // Ball3DPPointRetriver::~Ball3DPPointRetriver() {;}
 
 Target_t Ball3DPPointRetriver::getTarget(void)
@@ -60,5 +60,16 @@ Target_t Ball3DPPointRetriver::getTarget(void)
     point3d[1] = b->get(1).asDouble();
     point3d[2] = b->get(2).asDouble();
 
+    m_ballPointU = b->get(4).asDouble(); //u and V are the the coordinate x any of image.
+    m_ballPointV = b->get(5).asDouble();
+
+
     return std::make_pair(std::move (point3d), true);
+}
+
+
+void Ball3DPPointRetriver::getTargetPixelCoord(double &u, double &v)
+{
+    u=m_ballPointU;
+    v=m_ballPointV;
 }
