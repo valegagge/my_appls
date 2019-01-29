@@ -75,7 +75,7 @@
 
         <connection>
                 <from>/pf3dTracker/data:o</from>
-                <to>/follower/ballPoint:i</to>
+                <to>/follower/targetPoints:i</to>
                 <protocol>udp</protocol>
         </connection>
 
@@ -99,6 +99,12 @@
         
         <connection>
                 <from>/genericObjJoystickControl/rpc</from>
+                <to>/world_input_port</to>
+                <protocol>tcp</protocol>
+        </connection>
+
+	<connection>
+                <from>/follower/worldInterface/rpc</from>
                 <to>/world_input_port</to>
                 <protocol>tcp</protocol>
         </connection>

@@ -124,4 +124,10 @@
                 <to>/viewer</to>
                 <protocol>tcp</protocol>
         </connection>
+
+	<connection>
+                <from>/follower/worldInterface/rpc</from>
+                <to>/world_input_port</to>
+                <protocol>tcp</protocol>
+        </connection>
 </application>

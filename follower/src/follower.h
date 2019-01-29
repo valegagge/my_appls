@@ -9,6 +9,7 @@
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/IFrameTransform.h>
 #include <yarp/os/Property.h>
+#include <yarp/os/RpcClient.h>
 
 #include <string>
 
@@ -85,8 +86,12 @@ private:
 
     const std::string m_redBallFrameId = "head_leopard_left";
     const std::string m_personFrameId = "depth_center";
-    const std::string m_sourceFrameId = "base_link";
+    const std::string m_sourceFrameId = "mobile_base_body_link"; //"base_link";
     std::string m_targetFrameId;
+
+    bool m_targetBoxIsCreated;
+    yarp::os::RpcClient m_worldInterfacePort;
+    const std::string m_nameTargetBox="targetBox2";
 
 
     yarp::os::BufferedPort<yarp::os::Bottle>  m_outputPort2baseCtr; //I send commands to baseControl interruptModule
@@ -111,6 +116,7 @@ private:
     bool sendCommand2GazeControl(double x, double y, double z);
     bool sendCommand2GazeControl_lookAtPixel(double u, double v);
     bool sendCommand2GazeControl_lookAtPoint(const  yarp::sig::Vector &x);
+    void paintTargetPoint(const  yarp::sig::Vector &target);
 
 
     // ---- TEST STUFF
