@@ -251,39 +251,41 @@ bool GenericObjJoystickControl::updateModule()
     val_left_right = val_left_right*m_gain_leftRight;
     val_rotation = val_rotation*m_gain_rotation;
 
-    // Prapare bottle containg command to send in order to get the current position
-    Bottle cmdGet, ansGet, cmdSet, ansSet;
-    cmdGet.clear();
-    ansGet.clear();
-    cmdSet.clear();
-    ansSet.clear();
-    cmdGet.addString("getPose");
-    cmdGet.addString(m_objName);
-    m_worldInterfacePort.write(cmdGet, ansGet);
-    //read the answer
-    double x = ansGet.get(0).asDouble();
-    double y = ansGet.get(1).asDouble();
-    double yaw = ansGet.get(5).asDouble();
-    //yDebug() << "BALL-JOYSTICK-CONTROL: cmd-GET= " << cmdGet.toString() << "  Ans=" << ansGet.toString();
+//     // Prapare bottle containg command to send in order to get the current position
+//     Bottle cmdGet, ansGet, cmdSet, ansSet;
+//     cmdGet.clear();
+//     ansGet.clear();
+//     cmdSet.clear();
+//     ansSet.clear();
+//     cmdGet.addString("getPose");
+//     cmdGet.addString(m_objName);
+//     m_worldInterfacePort.write(cmdGet, ansGet);
+//     //read the answer
+//     double x = ansGet.get(0).asDouble();
+//     double y = ansGet.get(1).asDouble();
+//     double yaw = ansGet.get(5).asDouble();
+//     //yDebug() << "BALL-JOYSTICK-CONTROL: cmd-GET= " << cmdGet.toString() << "  Ans=" << ansGet.toString();
+//
+//     //Sum the calulated delta
+//     x+=val_forward;
+//     y+=val_left_right;
+//     yaw+=val_rotation;
 
-    //Sum the calulated delta
-    x+=val_forward;
-    y+=val_left_right;
-    yaw+=val_rotation;
-
+    Bottle cmdSet, ansSet;
     //send command for new position
     cmdSet.addString("setPose");
     cmdSet.addString(m_objName);
-    cmdSet.addDouble(x);
-    cmdSet.addDouble(y);
-    cmdSet.addDouble(ansGet.get(2).asDouble()); // z
-    cmdSet.addDouble(ansGet.get(3).asDouble()); // r
-    cmdSet.addDouble(ansGet.get(4).asDouble()); // p
-    cmdSet.addDouble(yaw); // y
+    cmdSet.addDouble(val_forward);
+    cmdSet.addDouble(val_left_right);
+    cmdSet.addDouble(0); // z
+    cmdSet.addDouble(0); // r
+    cmdSet.addDouble(0); // p
+    cmdSet.addDouble(val_rotation); // y
+    cmdSet.addString(m_objName+linkstr);
     m_worldInterfacePort.write(cmdSet, ansSet);
-    //yDebug() << "BALL-JOYSTICK-CONTROL: cmd-SET= " << cmdSet.toString() << "  Ans=" << ansSet.toString();
+   // yDebug() << "BALL-JOYSTICK-CONTROL: cmd-SET= " << cmdSet.toString() << "  Ans=" << ansSet.toString();
 
-
+    return true;
 }
 
 
