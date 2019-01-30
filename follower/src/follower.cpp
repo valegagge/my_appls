@@ -151,7 +151,11 @@ void Follower::followTarget(Target_t &target)
 //    yDebug() << "Look at point " << targetOnCamFrame.toString();
     sendCommand2GazeControl_lookAtPoint(targetOnCamFrame);
 
-    paintTargetPoint(targetOnBaseFrame);
+    yarp::sig::Vector target2Paint= targetOnBaseFrame;
+    target2Paint[2]=0.0; //I don't want z axis
+
+    paintTargetPoint(target2Paint);
+    paintTargetPoint2(targetOnCamFrame);
 }
 
 
@@ -182,6 +186,21 @@ bool Follower::getBallPointTrasformed(yarp::sig::Vector &pointBallInput, yarp::s
     else
     {
         yError() << "FOLLOWER: error in getting transform point";
+    }
+
+    return res;
+}
+
+bool Follower::getPointTrasformedInHeadFrame(std::string frame_src, yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput)
+{
+    bool res = m_transformClient->transformPoint(frame_src, "head_link", pointInput, pointOutput);
+    if(res)
+    {
+        //        yDebug() << "FOLLOWER: point (" << pointBallInput.toString() << ") has been transformed in (" << pointBallOutput.toString() << ")";
+    }
+    else
+    {
+        yError() << "FOLLOWER: error in getting transform point in head frame";
     }
 
     return res;
@@ -521,7 +540,7 @@ void Follower::paintTargetPoint(const  yarp::sig::Vector &target)
         cmd.addDouble(0.2); //size
         cmd.addDouble(target[0]);
         cmd.addDouble(target[1]); //y
-        cmd.addDouble(0); //z
+        cmd.addDouble(target[2]); //z
         cmd.addDouble(0); //r
         cmd.addDouble(0); //p
         cmd.addDouble(0); //y
@@ -565,11 +584,89 @@ void Follower::paintTargetPoint(const  yarp::sig::Vector &target)
     cmdSet.addString(m_nameTargetBox);
     cmdSet.addDouble(target[0]);
     cmdSet.addDouble(target[1]);
-    cmdSet.addDouble(0); // z
+    cmdSet.addDouble(target[2]); // z
     cmdSet.addDouble(ansGet.get(3).asDouble()); // r
     cmdSet.addDouble(ansGet.get(4).asDouble()); // p
     cmdSet.addDouble(ansGet.get(5).asDouble()); // y
     cmdSet.addString("SIM_CER_ROBOT::mobile_base_body_link"); /*mobile_base_body_link*/ //frame name
+    m_worldInterfacePort.write(cmdSet, ansSet);
+
+}
+
+
+void Follower::paintTargetPoint2(yarp::sig::Vector &target)
+{
+    static bool isCreated=false;
+    static const std::string nameTargetBox="frameGaze";
+    yarp::sig::Vector targetOutput;
+
+    if(!getPointTrasformedInHeadFrame(m_targetFrameId, target, targetOutput))
+    {
+        yError() << "I cannot piant the source frame!!";
+        return;
+    }
+
+
+    if( (!isCreated) && (m_worldInterfacePort.asPort().getOutputCount() >0 ))
+    {
+        yDebug() << "I'm about to create the target frame...";
+        Bottle cmd, ans;
+        cmd.clear();
+        ans.clear();
+
+        cmd.addString("makeFrame");
+        cmd.addDouble(0.2); //size
+        cmd.addDouble(targetOutput[0]);
+        cmd.addDouble(targetOutput[1]); //y
+        cmd.addDouble(targetOutput[2]); //z
+        cmd.addDouble(0); //r
+        cmd.addDouble(0); //p
+        cmd.addDouble(0); //y
+        //orange color on central ball
+        cmd.addInt(0); //red
+        cmd.addInt(0); //green
+        cmd.addInt(0); //blue
+        cmd.addString("SIM_CER_ROBOT::head_link"); /*head_leopard_left*/ //frame name
+        cmd.addString(nameTargetBox); //box obj name
+
+        m_worldInterfacePort.write(cmd, ans);
+        yDebug() << "follower: makeFramegaze= " << cmd.toString() << "  Ans=" << ans.toString();
+        if(ans.toString() == nameTargetBox)
+        {
+            isCreated = true;
+            return;
+        }
+        else
+            isCreated = false;
+    }
+
+    if(!isCreated)
+    {
+        return;
+    }
+
+    // Prapare bottle containg command to send in order to get the current position
+    Bottle cmdGet, ansGet, cmdSet, ansSet;
+    cmdGet.clear();
+    ansGet.clear();
+    cmdSet.clear();
+    ansSet.clear();
+    cmdGet.addString("getPose");
+    cmdGet.addString(nameTargetBox);
+    cmdGet.addString("SIM_CER_ROBOT::head_link"); /*head_leopard_left*/ //frame name
+    m_worldInterfacePort.write(cmdGet, ansGet);
+    //read the answer
+
+    //send command for new position
+    cmdSet.addString("setPose");
+    cmdSet.addString(nameTargetBox);
+    cmdSet.addDouble(targetOutput[0]);
+    cmdSet.addDouble(targetOutput[1]);
+    cmdSet.addDouble(targetOutput[2]); // z
+    cmdSet.addDouble(ansGet.get(3).asDouble()); // r
+    cmdSet.addDouble(ansGet.get(4).asDouble()); // p
+    cmdSet.addDouble(ansGet.get(5).asDouble()); // y
+    cmdSet.addString("SIM_CER_ROBOT::head_link"); /*head_leopard_left*/ //frame name
     m_worldInterfacePort.write(cmdSet, ansSet);
 
 }

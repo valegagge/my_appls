@@ -107,6 +107,7 @@ private:
     bool getMatrix(yarp::sig::Matrix &transform);
 
     bool getBallPointTrasformed(yarp::sig::Vector &pointBallInput, yarp::sig::Vector &pointBallOutput);
+    bool getPointTrasformedInHeadFrame(std::string frame_src, yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput);
 
     bool initTransformClient(void);
 
@@ -117,6 +118,7 @@ private:
     bool sendCommand2GazeControl_lookAtPixel(double u, double v);
     bool sendCommand2GazeControl_lookAtPoint(const  yarp::sig::Vector &x);
     void paintTargetPoint(const  yarp::sig::Vector &target);
+    void paintTargetPoint2(yarp::sig::Vector &target);
 
 
     // ---- TEST STUFF
