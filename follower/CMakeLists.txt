@@ -10,6 +10,6 @@ set(ASSISTIVE_REHAB_SRC         $ENV{ROBOT_CODE}/assistive-rehab/lib/src/dtw.cpp
                                 $ENV{ROBOT_CODE}/assistive-rehab/lib/src/skeleton.cpp)
 include_directories (${ASSISTIVE_REHAB_INC} ${YARP_CV})
 
-add_executable(follower ./src/follower.h ./src/TargetRetriver.h ./src/Ball3DPointRetriver.cpp ./src/Person3DRetriver.cpp ./src/Person3DRetriver.h ./src/follower.cpp ./src/main.cpp  ${ASSISTIVE_REHAB_SRC})
+add_executable(follower ./src/follower.h ./src/TargetRetriver.h ./src/Ball3DPointRetriver.cpp ./src/Person3DRetriver.cpp ./src/simFramePainter.h ./src/simFramePainter.cpp ./src/Person3DRetriver.h ./src/follower.cpp ./src/main.cpp  ${ASSISTIVE_REHAB_SRC})
 # link with YARP libraries
 target_link_libraries(follower ${YARP_LIBRARIES} ${OpenCV_LIBS} )

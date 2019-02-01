@@ -15,6 +15,7 @@
 
 #include "TargetRetriver.h"
 #include "Person3DRetriver.h"
+#include "simFramePainter.h"
 
 class FollowerConfig
 {
@@ -86,13 +87,14 @@ private:
 
     const std::string m_redBallFrameId = "head_leopard_left";
     const std::string m_personFrameId = "depth_center";
-    const std::string m_sourceFrameId = "mobile_base_body_link"; //"base_link";
+    const std::string m_baseFrameId = "mobile_base_body_link";
     std::string m_targetFrameId;
 
-    bool m_targetBoxIsCreated;
-    yarp::os::RpcClient m_worldInterfacePort;
-    const std::string m_nameTargetBox="targetBox2";
-
+//     bool m_targetBoxIsCreated;
+//     yarp::os::RpcClient m_worldInterfacePort;
+//     const std::string m_nameTargetBox="targetBox2";
+    bool m_onSimulation;
+    SimManager * m_simmanager_ptr;
 
     yarp::os::BufferedPort<yarp::os::Bottle>  m_outputPort2baseCtr; //I send commands to baseControl interruptModule
     yarp::os::BufferedPort<yarp::os::Property>  m_outputPort2gazeCtr; //I send commands to the gaze controller
@@ -106,8 +108,8 @@ private:
     //get transform matrix from left camera to mobile base. Pf3dtraker use the left camera.
     bool getMatrix(yarp::sig::Matrix &transform);
 
-    bool getBallPointTrasformed(yarp::sig::Vector &pointBallInput, yarp::sig::Vector &pointBallOutput);
-    bool getPointTrasformedInHeadFrame(std::string frame_src, yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput);
+    bool transformPointInBaseFrame(yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput);
+    bool transformPointInHeadFrame(std::string frame_src, yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput);
 
     bool initTransformClient(void);
 
@@ -119,6 +121,7 @@ private:
     bool sendCommand2GazeControl_lookAtPoint(const  yarp::sig::Vector &x);
     void paintTargetPoint(const  yarp::sig::Vector &target);
     void paintTargetPoint2(yarp::sig::Vector &target);
+    bool isRunningInsimulation(void) {return((m_simmanager_ptr==nullptr) ? false :true);}
 
 
     // ---- TEST STUFF
