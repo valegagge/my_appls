@@ -9,8 +9,13 @@
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/IFrameTransform.h>
 #include <yarp/os/Property.h>
+#include <yarp/os/RpcClient.h>
 
 #include <string>
+
+#include "TargetRetriver.h"
+#include "Person3DRetriver.h"
+#include "simFramePainter.h"
 
 class FollowerConfig
 {
@@ -21,16 +26,18 @@ public:
     std::string outputPortName;
     double distanceThreshold = 0.8;
     double angleThreshold = 3.0;
+    std::string targetType;
 
     FollowerConfig()
     {
         //init with default values
         factorDist2Vel = 0.8;
         factorAng2Vel = 0.8;
-        inputPortName = "ballPoint";
+        inputPortName = "targetPoint";
         outputPortName = "commands";
         distanceThreshold = 0.8;
         angleThreshold = 3.0;
+        targetType = "person";
     }
 
     void print(void)
@@ -42,10 +49,14 @@ public:
         yInfo() << "factorDist2Vel=" << outputPortName;
         yInfo() << "distanceThreshold=" << distanceThreshold;
         yInfo() << "angleThreshold=" << angleThreshold;
+        yInfo() << "targetType=" << targetType;
     }
 };
 
-
+enum class FollowerTargetType
+{
+    redball, person
+};
 
 class Follower:public yarp::os::RFModule
 {
@@ -70,17 +81,21 @@ private:
     yarp::dev::IFrameTransform* m_transformClient;
     yarp::dev::PolyDriver      m_driver;
 
-#if 0
-    // correct but maybe .. i try to invert (as suggested by silvio)
-    const std::string target_frame_id = "base_link"; //"head_leopard_right";
-    const std::string source_frame_id = "head_leopard_left";
-#else
-    // marco.accame: ok, it works.
-    // conclusion: there is a bug in the methods. it is used an inverse matrix.
-    const std::string target_frame_id = "head_leopard_left";
-    const std::string source_frame_id = "base_link";
-#endif
-    yarp::os::BufferedPort<yarp::os::Bottle> m_inputPort; //From this port I receive the data from Pf3dtraker
+    FollowerTargetType         m_targetType;
+    TargetRetriver*            m_pointRetriver_ptr; //the target retriver read the input port and get the target point.
+
+
+    const std::string m_redBallFrameId = "head_leopard_left";
+    const std::string m_personFrameId = "depth_center";
+    const std::string m_baseFrameId = "mobile_base_body_link";
+    std::string m_targetFrameId;
+
+//     bool m_targetBoxIsCreated;
+//     yarp::os::RpcClient m_worldInterfacePort;
+//     const std::string m_nameTargetBox="targetBox2";
+    bool m_onSimulation;
+    SimManager * m_simmanager_ptr;
+
     yarp::os::BufferedPort<yarp::os::Bottle>  m_outputPort2baseCtr; //I send commands to baseControl interruptModule
     yarp::os::BufferedPort<yarp::os::Property>  m_outputPort2gazeCtr; //I send commands to the gaze controller
 
@@ -88,12 +103,13 @@ private:
 
 
 
-    void followBall(); //core function call in updateModule.
+    void followTarget(Target_t &target); //core function call in updateModule.
 
     //get transform matrix from left camera to mobile base. Pf3dtraker use the left camera.
     bool getMatrix(yarp::sig::Matrix &transform);
 
-    bool getBallPointTrasformed(yarp::sig::Vector &pointBallInput, yarp::sig::Vector &pointBallOutput);
+    bool transformPointInBaseFrame(yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput);
+    bool transformPointInHeadFrame(std::string frame_src, yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput);
 
     bool initTransformClient(void);
 
@@ -103,6 +119,9 @@ private:
     bool sendCommand2GazeControl(double x, double y, double z);
     bool sendCommand2GazeControl_lookAtPixel(double u, double v);
     bool sendCommand2GazeControl_lookAtPoint(const  yarp::sig::Vector &x);
+    void paintTargetPoint(const  yarp::sig::Vector &target);
+    void paintTargetPoint2(yarp::sig::Vector &target);
+    bool isRunningInsimulation(void) {return((m_simmanager_ptr==nullptr) ? false :true);}
 
 
     // ---- TEST STUFF

@@ -12,6 +12,8 @@
 #include <math.h>
 
 #include "follower.h"
+
+
 #include "../../../yarp/src/libYARP_OS/include/yarp/os/Bottle.h"
 using namespace std;
 using namespace yarp::os;
@@ -59,12 +61,27 @@ void Follower::sendOutputLikeJoystick()
 bool Follower::updateModule()
 {
 //    sendOutput();
-    followBall();
+    Target_t targetpoint({0,0,0}, false);
+
+
+    switch(m_targetType)
+    {
+        case FollowerTargetType::person:
+        { targetpoint= (dynamic_cast<Person3DPPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
+
+        case FollowerTargetType::redball:
+        { targetpoint= (dynamic_cast<Ball3DPPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
+
+        default: break;
+    };
+
+    followTarget(targetpoint);
 //    moveRobot();
    return true;
 }
 
-void Follower::followBall(void)
+
+void Follower::followTarget(Target_t &target)
 {
     //1. get the transform matrix
     //this step is not necessary... we use it only for debug purpose
@@ -75,71 +92,92 @@ void Follower::followBall(void)
         return;
     }
 
-    //2. read ball poosition
-    Bottle *b = m_inputPort.read();
-
-//     yDebug() << "Vedo pallina " << b->get(6).asDouble();
-//     yDebug() << "pos pallina" << b->get(0).asDouble() << b->get(1).asDouble() << b->get(2).asDouble();
-    bool ballIsTracked = (b->get(6).asDouble() == 1.0) ? true : false;
-
-    if(!ballIsTracked)
+    //2. read target poosition
+    if(!target.second)
     {
-        yError() << "FOLLOWER: I can't see the ball!!!";
+        //yError() << "FOLLOWER: I can't see the ball!!!";
         return;
+    }
+    else
+    {
+        yDebug() << "FOLLOWER: ho un target valido!!!" << target.first[0] << target.first[1] << target.first[2] ;
     }
 
     
     //3. transform the ball-point from camera point of view to base point of view.
-    yarp::sig::Vector pointBallInput(3), pointBallOutput;
-    pointBallInput[0] = b->get(0).asDouble();
-    pointBallInput[1] = b->get(1).asDouble();
-    pointBallInput[2] = b->get(2).asDouble();
+    yarp::sig::Vector targetOnCamFrame(3), targetOnBaseFrame;
+    targetOnCamFrame[0] = target.first[0];
+    targetOnCamFrame[1] = target.first[1];
+    targetOnCamFrame[2] = target.first[2];
 
-    double ballPointU = b->get(4).asDouble(); //u and V are the the coordinate x any of image.
-    double ballPointV = b->get(5).asDouble();
-
-    if(!getBallPointTrasformed(pointBallInput, pointBallOutput))
+    if(!transformPointInBaseFrame(targetOnCamFrame, targetOnBaseFrame))
     {
-        yError() << "FOLLOWER: error in getBallPointTrasformed()";
         return;
     }
 
     //4. x axis is the first element, y is on second. (In order to calculate the distance see mobile base frame)
-    double distance =  sqrt(pow(pointBallOutput[0], 2) + pow(pointBallOutput[1], 2));
+    double distance =  sqrt(pow(targetOnBaseFrame[0], 2) + pow(targetOnBaseFrame[1], 2));
 
     const double RAD2DEG  = 180.0/M_PI;
-    double angle = atan2(pointBallOutput[1], pointBallOutput[0]) * RAD2DEG;
+    double angle = atan2(targetOnBaseFrame[1], targetOnBaseFrame[0]) * RAD2DEG;
 
     double lin_vel  = 0.0;
     double ang_vel = 0.0;
 
-
+   yDebug() << "distance=" << distance ;
     if(distance > m_cfg.distanceThreshold)
     {
         lin_vel = m_cfg.factorDist2Vel *distance;
     }
     else
-        cout << "the Distance is under threshold!! " <<endl; //only for debug pupose
+        cout << "the Distance is under threshold!! " <<endl; //only for debug purpose
 
 
 
     if(fabs(angle) >m_cfg.angleThreshold)
         ang_vel = m_cfg.factorAng2Vel * angle;
     else
-        cout << "the angle is under threshold!! " <<endl; // //only for debug pupose
+        cout << "the angle is under threshold!! " <<endl; // //only for debug purpose
 
-
+        yDebug() << "sendCommand2BaseControl linvel=" << lin_vel <<"ang_vel" <<ang_vel ;
     sendCommand2BaseControl(0.0, lin_vel, ang_vel );
 
     //5. send commands to gaze control
+//     double ballPointU, ballPointV;
+//     (dynamic_cast<Ball3DPPointRetriver*>(m_pointRetriver_ptr))->getTargetPixelCoord(ballPointU, ballPointV);
+    //yDebug() << "Point of image: " << ballPointU << ballPointV;
     //sendCommand2GazeControl_lookAtPixel(ballPointU, ballPointV);
-    sendCommand2GazeControl_lookAtPoint(pointBallOutput);
+//    yDebug() << "Look at point " << targetOnCamFrame.toString();
+    sendCommand2GazeControl_lookAtPoint(targetOnBaseFrame);
+
+
+    if(!isRunningInsimulation())
+        return;
+
+    //6. paint in gazebo the target on cam and the final target
+
+    yDebug() << "paint gaze frame";
+    yarp::sig::Vector targetOnHeadFrame;
+    if(transformPointInHeadFrame(m_targetFrameId, targetOnCamFrame, targetOnHeadFrame))
+    {
+        targetOnHeadFrame[2]+=0.20;
+        m_simmanager_ptr->PaintGazeFrame(targetOnHeadFrame);
+    }
+    else
+    {
+        yError() << "error in transforming cam frame to head frame";
+    }
+
+    yDebug() << "paint target frame";
+    yarp::sig::Vector target2Paint= targetOnBaseFrame;
+    target2Paint[2]=0.0; //I don't want z axis
+    m_simmanager_ptr->PaintTargetFrame(target2Paint);
 }
 
 
 bool Follower::getMatrix(yarp::sig::Matrix &transform)
 {
-    bool res = m_transformClient->getTransform (target_frame_id, source_frame_id, transform);
+    bool res = m_transformClient->getTransform (m_targetFrameId, m_baseFrameId, transform);
     if(res)
     {
 //         yDebug() << "FOLLOWER: i get the transform matrix:"; // << transform.toString();
@@ -154,16 +192,31 @@ bool Follower::getMatrix(yarp::sig::Matrix &transform)
     return res;
 }
 
-bool Follower::getBallPointTrasformed(yarp::sig::Vector &pointBallInput, yarp::sig::Vector &pointBallOutput)
+bool Follower::transformPointInBaseFrame(yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput)
 {
-    bool res = m_transformClient->transformPoint(target_frame_id, source_frame_id, pointBallInput, pointBallOutput);
+    bool res = m_transformClient->transformPoint(m_targetFrameId, m_baseFrameId, pointInput, pointOutput);
     if(res)
     {
-//        yDebug() << "FOLLOWER: point (" << pointBallInput.toString() << ") has been transformed in (" << pointBallOutput.toString() << ")";
+        //        yDebug() << "FOLLOWER: point (" << pointInput.toString() << ") has been transformed in (" << pointOutput.toString() << ")";
     }
     else
     {
-        yError() << "FOLLOWER: error in getting transform point";
+        yError() << "FOLLOWER: error in transformPointInBaseFrame()";
+    }
+
+    return res;
+}
+
+bool Follower::transformPointInHeadFrame(std::string frame_src, yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput)
+{
+    bool res = m_transformClient->transformPoint(frame_src, "head_link", pointInput, pointOutput);
+    if(res)
+    {
+        //        yDebug() << "FOLLOWER: point (" << pointBallInput.toString() << ") has been transformed in (" << pointBallOutput.toString() << ")";
+    }
+    else
+    {
+        yError() << "FOLLOWER: error in getting transform point in head frame";
     }
 
     return res;
@@ -197,6 +250,7 @@ bool Follower::readConfig(yarp::os::ResourceFinder &rf, FollowerConfig &cfg)
         if (config_group.check("outputPort"))  { cfg.outputPortName = config_group.find("outputPort").asString(); }
         if (config_group.check("distanceThreshold"))  { cfg.distanceThreshold = config_group.find("distanceThreshold").asDouble(); }
         if (config_group.check("angleThreshold"))  { cfg.angleThreshold = config_group.find("angleThreshold").asDouble(); }
+        if (config_group.check("targetType"))  { cfg.targetType = config_group.find("targetType").asString(); }
     }
 
     cfg.print();
@@ -220,9 +274,24 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
 
-    if(! m_inputPort.open("/follower/" + m_cfg.inputPortName +":i"))
+
+    if(m_cfg.targetType == "redball")
     {
-        yError() << "Error opening input port";
+        m_pointRetriver_ptr = new Ball3DPPointRetriver();
+        m_targetFrameId = m_redBallFrameId;
+        m_targetType = FollowerTargetType::redball;
+    }
+    else //person or default
+    {
+        m_pointRetriver_ptr = new Person3DPPointRetriver();
+        m_targetFrameId = m_personFrameId;
+        m_targetType = FollowerTargetType::person;
+    }
+
+
+    if(! m_pointRetriver_ptr->init("/follower/" + m_cfg.inputPortName +":i"))
+    {
+        yError() << "Error in initializing the Target Retriver";
         return false;
     }
 
@@ -239,6 +308,17 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
 
+    if(m_onSimulation)
+    {
+        m_simmanager_ptr = new SimManager();
+        m_simmanager_ptr->init("SIM_CER_ROBOT", "/follower/worldInterface/rpc");
+    }
+
+//     if(!m_worldInterfacePort.open("/follower/worldInterface/rpc"))
+//     {
+//         yError() << "Error opening worldInterface rpc port!!";
+//         return false;
+//     }
 
     if(!initTransformClient())
         return false;
@@ -253,14 +333,22 @@ bool Follower::interruptModule()
     m_outputPortJoystick.interrupt();
     m_outputPortJoystick.close();
 
-    m_inputPort.interrupt();
-    m_inputPort.close();
+    m_pointRetriver_ptr->deinit();
 
     m_outputPort2baseCtr.interrupt();
     m_outputPort2baseCtr.close();
 
     m_outputPort2gazeCtr.interrupt();
     m_outputPort2gazeCtr.close();
+
+//     m_worldInterfacePort.interrupt();
+//     m_worldInterfacePort.close();
+    if(isRunningInsimulation())
+        m_simmanager_ptr->deinit();
+
+    if(m_pointRetriver_ptr!=nullptr)
+        m_pointRetriver_ptr->deinit();
+
     return true;
 }
 // Close function, to perform cleanup.
@@ -274,7 +362,8 @@ bool Follower::close()
 }
 
 
-Follower::Follower():m_transformClient(nullptr)
+Follower::Follower():m_transformClient(nullptr), m_targetType(FollowerTargetType::person), m_pointRetriver_ptr(nullptr),
+                    m_onSimulation(true), m_simmanager_ptr(nullptr)
 {;}
 Follower::~Follower(){;}
 
@@ -426,16 +515,172 @@ bool Follower::sendCommand2GazeControl_lookAtPoint(const  yarp::sig::Vector &x)
 
     Property &p = m_outputPort2gazeCtr.prepare();
     p.clear();
+    if(m_targetType==FollowerTargetType::person)
+        p.put("control-frame","depth_center");
+    else
+        p.put("control-frame","left");
 
+    p.put("target-type","cartesian");
+
+//     Bottle target =  yarp::os::Bottle();
+//     Bottle &val = target.addList();
+//     val.addList().read(x);
     Bottle target;
     target.addList().read(x);
-
-    p.put("control-frame","left");
-    p.put("target-type","cartesian");
     p.put("target-location",target.get(0));
+
+
+    yDebug() << "Command to gazectrl: " << p.toString();
 
     m_outputPort2gazeCtr.write();
 
     return true;
 
 }
+
+
+// void Follower::paintTargetPoint(const  yarp::sig::Vector &target)
+// {
+//     if( (!m_targetBoxIsCreated) && (m_worldInterfacePort.asPort().getOutputCount() >0 ))
+//     {
+//         yDebug() << "I'm about to create the target frame...";
+//         Bottle cmd, ans;
+//         cmd.clear();
+//         ans.clear();
+//
+//         cmd.addString("makeFrame");
+//         cmd.addDouble(0.2); //size
+//         cmd.addDouble(target[0]);
+//         cmd.addDouble(target[1]); //y
+//         cmd.addDouble(target[2]); //z
+//         cmd.addDouble(0); //r
+//         cmd.addDouble(0); //p
+//         cmd.addDouble(0); //y
+//         //orange color on central ball
+//         cmd.addInt(255); //red
+//         cmd.addInt(128); //green
+//         cmd.addInt(0); //blue
+//         cmd.addString("SIM_CER_ROBOT::mobile_base_body_link");
+//         cmd.addString(m_nameTargetBox); //box obj name
+//
+//         m_worldInterfacePort.write(cmd, ans);
+//         yDebug() << "follower: makeBox= " << cmd.toString() << "  Ans=" << ans.toString();
+//         if(ans.toString() == m_nameTargetBox)
+//         {
+//             m_targetBoxIsCreated = true;
+//             return;
+//         }
+//         else
+//             m_targetBoxIsCreated = false;
+//     }
+//
+//     if(!m_targetBoxIsCreated)
+//     {
+//         return;
+//     }
+//
+//     // Prapare bottle containg command to send in order to get the current position
+//     Bottle cmdGet, ansGet, cmdSet, ansSet;
+//     cmdGet.clear();
+//     ansGet.clear();
+//     cmdSet.clear();
+//     ansSet.clear();
+//     cmdGet.addString("getPose");
+//     cmdGet.addString(m_nameTargetBox);
+//     cmdGet.addString("SIM_CER_ROBOT::mobile_base_body_link");
+//     m_worldInterfacePort.write(cmdGet, ansGet);
+//     //read the answer
+//
+//     //send command for new position
+//     cmdSet.addString("setPose");
+//     cmdSet.addString(m_nameTargetBox);
+//     cmdSet.addDouble(target[0]);
+//     cmdSet.addDouble(target[1]);
+//     cmdSet.addDouble(target[2]); // z
+//     cmdSet.addDouble(ansGet.get(3).asDouble()); // r
+//     cmdSet.addDouble(ansGet.get(4).asDouble()); // p
+//     cmdSet.addDouble(ansGet.get(5).asDouble()); // y
+//     cmdSet.addString("SIM_CER_ROBOT::mobile_base_body_link");
+//     m_worldInterfacePort.write(cmdSet, ansSet);
+//
+// }
+//
+//
+// void Follower::paintTargetPoint2(yarp::sig::Vector &target)
+// {
+//     static bool isCreated=false;
+//     static const std::string nameTargetBox="frameGaze";
+//     yarp::sig::Vector targetOutput;
+//
+//     if(!transformPointInHeadFrame(m_targetFrameId, target, targetOutput))
+//     {
+//         yError() << "I cannot piant the source frame!!";
+//         return;
+//     }
+//
+//
+//     if( (!isCreated) && (m_worldInterfacePort.asPort().getOutputCount() >0 ))
+//     {
+//         yDebug() << "I'm about to create the target frame...";
+//         Bottle cmd, ans;
+//         cmd.clear();
+//         ans.clear();
+//
+//         cmd.addString("makeFrame");
+//         cmd.addDouble(0.2); //size
+//         cmd.addDouble(targetOutput[0]);
+//         cmd.addDouble(targetOutput[1]); //y
+//         cmd.addDouble(targetOutput[2]); //z
+//         cmd.addDouble(0); //r
+//         cmd.addDouble(0); //p
+//         cmd.addDouble(0); //y
+//         //orange color on central ball
+//         cmd.addInt(0); //red
+//         cmd.addInt(0); //green
+//         cmd.addInt(0); //blue
+//         cmd.addString("SIM_CER_ROBOT::head_link");
+//         cmd.addString(nameTargetBox); //box obj name
+//
+//         m_worldInterfacePort.write(cmd, ans);
+//         yDebug() << "follower: makeFramegaze= " << cmd.toString() << "  Ans=" << ans.toString();
+//         if(ans.toString() == nameTargetBox)
+//         {
+//             isCreated = true;
+//             return;
+//         }
+//         else
+//             isCreated = false;
+//     }
+//
+//     if(!isCreated)
+//     {
+//         return;
+//     }
+//
+//     // Prapare bottle containg command to send in order to get the current position
+//     Bottle cmdGet, ansGet, cmdSet, ansSet;
+//     cmdGet.clear();
+//     ansGet.clear();
+//     cmdSet.clear();
+//     ansSet.clear();
+//     cmdGet.addString("getPose");
+//     cmdGet.addString(nameTargetBox);
+//     cmdGet.addString("SIM_CER_ROBOT::head_link");
+//     m_worldInterfacePort.write(cmdGet, ansGet);
+//     //read the answer
+//
+//     //send command for new position
+//     cmdSet.addString("setPose");
+//     cmdSet.addString(nameTargetBox);
+//     cmdSet.addDouble(targetOutput[0]);
+//     cmdSet.addDouble(targetOutput[1]);
+//     cmdSet.addDouble(targetOutput[2]); // z
+//     cmdSet.addDouble(ansGet.get(3).asDouble()); // r
+//     cmdSet.addDouble(ansGet.get(4).asDouble()); // p
+//     cmdSet.addDouble(ansGet.get(5).asDouble()); // y
+//     cmdSet.addString("SIM_CER_ROBOT::head_link");
+//     m_worldInterfacePort.write(cmdSet, ansSet);
+//
+// }
+//
+//

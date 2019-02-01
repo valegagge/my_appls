@@ -71,6 +71,7 @@ private:
     double m_gain_fowardBack = 0.001;
     double m_gain_leftRight = 0.001;
     double m_gain_rotation = 0.001;
+    const std::string linkstr="::link";
 
     void saturate(double& v, double sat_lim);
     void printCfg(void);
