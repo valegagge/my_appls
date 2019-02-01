@@ -490,19 +490,22 @@ bool Follower::sendCommand2GazeControl_lookAtPoint(const  yarp::sig::Vector &x)
 
     Property &p = m_outputPort2gazeCtr.prepare();
     p.clear();
-
-    Bottle target =  yarp::os::Bottle();
-    Bottle &val = target.addList();
-    val.addList().read(x);
-
     if(m_targetType==FollowerTargetType::person)
         p.put("control-frame","depth_center");
     else
         p.put("control-frame","left");
 
     p.put("target-type","cartesian");
+
+//     Bottle target =  yarp::os::Bottle();
+//     Bottle &val = target.addList();
+//     val.addList().read(x);
+    Bottle target;
+    target.addList().read(x);
     p.put("target-location",target.get(0));
-//    yDebug() << "Command to gazectrl: " << p.toString();
+
+
+    yDebug() << "Command to gazectrl: " << p.toString();
 
     m_outputPort2gazeCtr.write();
 
