@@ -155,19 +155,20 @@ void Follower::followTarget(Target_t &target)
         return;
 
     //6. paint in gazebo the target on cam and the final target
-
-    yDebug() << "paint gaze frame";
-    yarp::sig::Vector targetOnHeadFrame;
-    if(transformPointInHeadFrame(m_targetFrameId, targetOnCamFrame, targetOnHeadFrame))
+    if(m_cfg.paintGazeFrame)
     {
-        targetOnHeadFrame[2]+=0.20;
-        m_simmanager_ptr->PaintGazeFrame(targetOnHeadFrame);
+        yDebug() << "paint gaze frame";
+        yarp::sig::Vector targetOnHeadFrame;
+        if(transformPointInHeadFrame(m_targetFrameId, targetOnCamFrame, targetOnHeadFrame))
+        {
+            targetOnHeadFrame[2]+=0.20;
+            m_simmanager_ptr->PaintGazeFrame(targetOnHeadFrame);
+        }
+        else
+        {
+            yError() << "error in transforming cam frame to head frame";
+        }
     }
-    else
-    {
-        yError() << "error in transforming cam frame to head frame";
-    }
-
     yDebug() << "paint target frame";
     yarp::sig::Vector target2Paint= targetOnBaseFrame;
     target2Paint[2]=0.0; //I don't want z axis
