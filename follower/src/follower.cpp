@@ -239,12 +239,27 @@ bool Follower::transformPointInHeadFrame(std::string frame_src, yarp::sig::Vecto
 // Message handler. Just echo all received messages.
 bool Follower::respond(const Bottle& command, Bottle& reply)
 {
-    cout << "Got something, echo is on" << endl;
-    if (command.get(0).asString() == "quit")
-        return false;
+
+
+    reply.clear();
+    cout << "Got something, echo is on. cmd=" << command.toString()<<endl;
+    if (command.get(0).asString()=="help")
+    {
+        reply.addVocab(Vocab::encode("many"));
+        reply.addString("Available commands are:");
+        reply.addString("start");
+        reply.addString("stop");
+        reply.addString("verbose 0/1");
+        return true;
+    }
     else
-        reply = command;
-    return true;
+    {
+        reply.addString("you");
+        reply.addString("said");
+        reply.append(command);
+    }
+    m_rpcPort.reply(reply);
+
 }
 
 bool Follower::readConfig(yarp::os::ResourceFinder &rf, FollowerConfig &cfg)
@@ -339,6 +354,8 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
     if(!initTransformClient())
         return false;
 
+    m_rpcPort.open("/follower/rpc");
+    attach(m_rpcPort);
 
     return true;
 }

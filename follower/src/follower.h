@@ -107,6 +107,8 @@ private:
     bool m_onSimulation;
     SimManager * m_simmanager_ptr;
 
+    yarp::os::Port m_rpcPort;
+
     yarp::os::BufferedPort<yarp::os::Bottle>  m_outputPort2baseCtr; //I send commands to baseControl interruptModule
     yarp::os::BufferedPort<yarp::os::Property>  m_outputPort2gazeCtr; //I send commands to the gaze controller
 
