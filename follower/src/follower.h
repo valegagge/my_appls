@@ -69,6 +69,11 @@ enum class FollowerTargetType
     redball, person
 };
 
+enum class FollowerStateMachine
+{
+    none=0, initted=1, configured=2, running=3
+};
+
 class Follower:public yarp::os::RFModule
 {
 public:
@@ -113,6 +118,9 @@ private:
     yarp::os::BufferedPort<yarp::os::Property>  m_outputPort2gazeCtr; //I send commands to the gaze controller
 
     FollowerConfig m_cfg;
+
+    FollowerStateMachine m_stateMachine_st;
+    Target_t m_lastValidTarget;
 
 
 

@@ -96,11 +96,19 @@ void Follower::followTarget(Target_t &target)
     if(!target.second)
     {
         //yError() << "FOLLOWER: I can't see the ball!!!";
+        //lancia il timer: se per x secondi non ho ancora un target valido ==> vai alla navigazione da solo verso last target
         return;
     }
     else
     {
+        m_lastValidTarget = target;
+        //ferma il timer
         yDebug() << "FOLLOWER: ho un target valido!!!" << target.first[0] << target.first[1] << target.first[2] ;
+    }
+
+    if(m_stateMachine_st != FollowerStateMachine::running)
+    {
+        return; //forse e' da anticipare per il discorso del timer??
     }
 
     
@@ -252,6 +260,16 @@ bool Follower::respond(const Bottle& command, Bottle& reply)
         reply.addString("verbose 0/1");
         return true;
     }
+    else if(command.get(0).asString()=="start")
+    {
+        m_stateMachine_st=FollowerStateMachine::running;
+        yError() << "I'M RUNNING!!!!!";
+    }
+    else if(command.get(0).asString()=="stop")
+    {
+        m_stateMachine_st=FollowerStateMachine::configured;
+        yError() << "I'M CONFIGURED!!!!!";
+    }
     else
     {
         reply.addString("you");
@@ -357,6 +375,7 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
     m_rpcPort.open("/follower/rpc");
     attach(m_rpcPort);
 
+    m_stateMachine_st=FollowerStateMachine::configured;
     return true;
 }
 // Interrupt function.
@@ -396,8 +415,8 @@ bool Follower::close()
 
 
 Follower::Follower():m_transformClient(nullptr), m_targetType(FollowerTargetType::person), m_pointRetriver_ptr(nullptr),
-                    m_onSimulation(true), m_simmanager_ptr(nullptr)
-{;}
+m_onSimulation(true), m_simmanager_ptr(nullptr), m_stateMachine_st(FollowerStateMachine::none)
+{m_lastValidTarget.second=false;}
 Follower::~Follower(){;}
 
 
