@@ -27,6 +27,13 @@ public:
     double distanceThreshold = 0.8;
     double angleThreshold = 3.0;
     std::string targetType;
+    struct
+    {
+        double angular;
+        double linear;
+    }velocityLimits;
+    double angleMinBeforeMove;
+    bool paintGazeFrame;
 
     FollowerConfig()
     {
@@ -38,6 +45,10 @@ public:
         distanceThreshold = 0.8;
         angleThreshold = 3.0;
         targetType = "person";
+        velocityLimits.angular = 30; //degree/sec
+        velocityLimits.linear = 3; //m/s
+        angleMinBeforeMove = 10.0; //degree
+        paintGazeFrame = false;
     }
 
     void print(void)

@@ -27,6 +27,10 @@ Target_t Person3DPPointRetriver::getTarget(void)
     }
 
     Bottle *b1=b->get(0).asList();
+    if(nullptr == b1)
+    {
+        return std::make_pair(std::move (point3d), false);
+    }
 
     if (b1->check("tag"))
     {

@@ -139,7 +139,19 @@ void Follower::followTarget(Target_t &target)
     else
         cout << "the angle is under threshold!! " <<endl; // //only for debug purpose
 
-        yDebug() << "sendCommand2BaseControl linvel=" << lin_vel <<"ang_vel" <<ang_vel ;
+    //if the angle difference is minor of angleMinBeforeMove than set linear velocity to 0
+    // in order to rotate and after moving.
+    if((abs(angle) < m_cfg.angleMinBeforeMove) && (fabs(angle) >m_cfg.angleThreshold))
+        lin_vel = 0.0;
+
+    //saturate velocities
+    if(ang_vel > m_cfg.velocityLimits.angular)
+        ang_vel= m_cfg.velocityLimits.angular;
+
+    if(lin_vel> m_cfg.velocityLimits.linear)
+        lin_vel = m_cfg.velocityLimits.linear;
+
+    yDebug() << "sendCommand2BaseControl linvel=" << lin_vel <<"ang_vel" <<ang_vel ;
     sendCommand2BaseControl(0.0, lin_vel, ang_vel );
 
     //5. send commands to gaze control
@@ -155,19 +167,20 @@ void Follower::followTarget(Target_t &target)
         return;
 
     //6. paint in gazebo the target on cam and the final target
-
-    yDebug() << "paint gaze frame";
-    yarp::sig::Vector targetOnHeadFrame;
-    if(transformPointInHeadFrame(m_targetFrameId, targetOnCamFrame, targetOnHeadFrame))
+    if(m_cfg.paintGazeFrame)
     {
-        targetOnHeadFrame[2]+=0.20;
-        m_simmanager_ptr->PaintGazeFrame(targetOnHeadFrame);
+        yDebug() << "paint gaze frame";
+        yarp::sig::Vector targetOnHeadFrame;
+        if(transformPointInHeadFrame(m_targetFrameId, targetOnCamFrame, targetOnHeadFrame))
+        {
+            targetOnHeadFrame[2]+=0.20;
+            m_simmanager_ptr->PaintGazeFrame(targetOnHeadFrame);
+        }
+        else
+        {
+            yError() << "error in transforming cam frame to head frame";
+        }
     }
-    else
-    {
-        yError() << "error in transforming cam frame to head frame";
-    }
-
     yDebug() << "paint target frame";
     yarp::sig::Vector target2Paint= targetOnBaseFrame;
     target2Paint[2]=0.0; //I don't want z axis
@@ -251,6 +264,9 @@ bool Follower::readConfig(yarp::os::ResourceFinder &rf, FollowerConfig &cfg)
         if (config_group.check("distanceThreshold"))  { cfg.distanceThreshold = config_group.find("distanceThreshold").asDouble(); }
         if (config_group.check("angleThreshold"))  { cfg.angleThreshold = config_group.find("angleThreshold").asDouble(); }
         if (config_group.check("targetType"))  { cfg.targetType = config_group.find("targetType").asString(); }
+        if (config_group.check("angularVelLimit"))  { cfg.velocityLimits.angular = config_group.find("angularVelLimit").asDouble(); }
+        if (config_group.check("linearVelLimit"))  { cfg.velocityLimits.linear = config_group.find("linearVelLimit").asDouble(); }
+        if (config_group.check("angleMinBeforeMove"))  { cfg.angleMinBeforeMove = config_group.find("angleMinBeforeMove").asDouble(); }
     }
 
     cfg.print();
