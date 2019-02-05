@@ -13,9 +13,10 @@
 
 #include <string>
 
+
 #include "TargetRetriver.h"
-#include "Person3DRetriver.h"
 #include "simFramePainter.h"
+
 
 class FollowerConfig
 {
@@ -74,41 +75,34 @@ enum class FollowerStateMachine
     none=0, initted=1, configured=2, running=3
 };
 
-class Follower:public yarp::os::RFModule
+
+
+class Follower
 {
 public:
 
     Follower();
     ~Follower();
-
-    double getPeriod();
-
-    bool updateModule();
-
-    bool respond(const yarp::os::Bottle& command, yarp::os::Bottle& reply);
-
     bool configure(yarp::os::ResourceFinder &rf);
-    // Interrupt function.
-    bool interruptModule();
-
+    void followTarget(Target_t &target);
+    bool start(void);
+    bool stop(void);
     bool close();
+    FollowerTargetType getTargetType(void);
+
 private:
 
-    yarp::dev::IFrameTransform* m_transformClient;
-    yarp::dev::PolyDriver      m_driver;
+    struct
+    {
+        yarp::dev::IFrameTransform* transformClient;
+        yarp::dev::PolyDriver      driver;
 
-    FollowerTargetType         m_targetType;
-    TargetRetriver*            m_pointRetriver_ptr; //the target retriver read the input port and get the target point.
+        const std::string redBallFrameId = "head_leopard_left";
+        const std::string personFrameId = "depth_center";
+        const std::string baseFrameId = "mobile_base_body_link";
+        std::string targetFrameId;
+    }m_transformData;
 
-
-    const std::string m_redBallFrameId = "head_leopard_left";
-    const std::string m_personFrameId = "depth_center";
-    const std::string m_baseFrameId = "mobile_base_body_link";
-    std::string m_targetFrameId;
-
-//     bool m_targetBoxIsCreated;
-//     yarp::os::RpcClient m_worldInterfacePort;
-//     const std::string m_nameTargetBox="targetBox2";
     bool m_onSimulation;
     SimManager * m_simmanager_ptr;
 
@@ -118,13 +112,11 @@ private:
     yarp::os::BufferedPort<yarp::os::Property>  m_outputPort2gazeCtr; //I send commands to the gaze controller
 
     FollowerConfig m_cfg;
+    FollowerTargetType         m_targetType;
 
     FollowerStateMachine m_stateMachine_st;
     Target_t m_lastValidTarget;
 
-
-
-    void followTarget(Target_t &target); //core function call in updateModule.
 
     //get transform matrix from left camera to mobile base. Pf3dtraker use the left camera.
     bool getMatrix(yarp::sig::Matrix &transform);
@@ -146,9 +138,11 @@ private:
 
 
     // ---- TEST STUFF
-     bool moveRobot(void);
-     yarp::os::BufferedPort<yarp::os::Bottle>  m_outputPortJoystick;//test only!!!used in sendOutput
-     void sendOutputLikeJoystick(); //only for test. it simulates joystick
+    bool moveRobot(void);
+    yarp::os::BufferedPort<yarp::os::Bottle>  m_outputPortJoystick;//test only!!!used in sendOutput
+    void sendOutputLikeJoystick(); //only for test. it simulates joystick
 
 
-};
+
+
+ };

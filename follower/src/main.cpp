@@ -1,4 +1,4 @@
-#include "follower.h"
+#include "FollowerModule.h"
 #include <yarp/os/ResourceFinder.h>
 #include <yarp/os/Network.h>
 
@@ -14,7 +14,7 @@ int main(int argc, char * argv[])
     /* initialize yarp network */
     Network yarp;
     /* create your module */
-    Follower module;
+    FollowerModule module;
     /* prepare and configure the resource finder */
     ResourceFinder rf;
     rf.configure(argc, argv);
