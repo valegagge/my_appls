@@ -30,6 +30,7 @@ public:
     m_worldInterfacePort_ptr(worldPort),
     m_frameIdOfRef(frameRef){;}
     void paint(const yarp::sig::Vector &point);
+    void erase(void);
 private:
     bool m_isCreated;
     std::string m_nameOfFrame;

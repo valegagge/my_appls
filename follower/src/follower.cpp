@@ -21,11 +21,6 @@ using namespace yarp::os;
 
 //------------------------ buffer helper test ---------------------
 
-double Follower::getPeriod()
-{
-    // module periodicity (seconds), called implicitly by the module.
-    return 0.01;
-}
 void Follower::sendOutputLikeJoystick()
 {
     static yarp::os::Stamp stamp;
@@ -55,44 +50,12 @@ void Follower::sendOutputLikeJoystick()
     b.addDouble(100);*/
 
     m_outputPortJoystick.write();
-    }
-
-// This is our main function. Will be called periodically every getPeriod() seconds
-bool Follower::updateModule()
-{
-//    sendOutput();
-    Target_t targetpoint({0,0,0}, false);
-
-
-    switch(m_targetType)
-    {
-        case FollowerTargetType::person:
-        { targetpoint= (dynamic_cast<Person3DPPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
-
-        case FollowerTargetType::redball:
-        { targetpoint= (dynamic_cast<Ball3DPPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
-
-        default: break;
-    };
-
-    followTarget(targetpoint);
-//    moveRobot();
-   return true;
 }
 
 
 void Follower::followTarget(Target_t &target)
 {
-    //1. get the transform matrix
-    //this step is not necessary... we use it only for debug purpose
-    yarp::sig::Matrix transform;
-    if(!getMatrix(transform))
-    {
-        yError() << "FOLLOWER: cannot get the matrix";
-        return;
-    }
-
-    //2. read target poosition
+    //1. read target poosition
     if(!target.second)
     {
         //yError() << "FOLLOWER: I can't see the ball!!!";
@@ -179,7 +142,7 @@ void Follower::followTarget(Target_t &target)
     {
         yDebug() << "paint gaze frame";
         yarp::sig::Vector targetOnHeadFrame;
-        if(transformPointInHeadFrame(m_targetFrameId, targetOnCamFrame, targetOnHeadFrame))
+        if(transformPointInHeadFrame(m_transformData.targetFrameId, targetOnCamFrame, targetOnHeadFrame))
         {
             targetOnHeadFrame[2]+=0.20;
             m_simmanager_ptr->PaintGazeFrame(targetOnHeadFrame);
@@ -195,10 +158,21 @@ void Follower::followTarget(Target_t &target)
     m_simmanager_ptr->PaintTargetFrame(target2Paint);
 }
 
+bool Follower::start()
+{
+    m_stateMachine_st = FollowerStateMachine::running;
+    return true;
+}
+
+bool Follower::stop()
+{
+    m_stateMachine_st = FollowerStateMachine::configured;
+    return true;
+}
 
 bool Follower::getMatrix(yarp::sig::Matrix &transform)
 {
-    bool res = m_transformClient->getTransform (m_targetFrameId, m_baseFrameId, transform);
+    bool res = m_transformData.transformClient->getTransform (m_transformData.targetFrameId, m_transformData.baseFrameId, transform);
     if(res)
     {
 //         yDebug() << "FOLLOWER: i get the transform matrix:"; // << transform.toString();
@@ -215,7 +189,7 @@ bool Follower::getMatrix(yarp::sig::Matrix &transform)
 
 bool Follower::transformPointInBaseFrame(yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput)
 {
-    bool res = m_transformClient->transformPoint(m_targetFrameId, m_baseFrameId, pointInput, pointOutput);
+    bool res = m_transformData.transformClient->transformPoint(m_transformData.targetFrameId, m_transformData.baseFrameId, pointInput, pointOutput);
     if(res)
     {
         //        yDebug() << "FOLLOWER: point (" << pointInput.toString() << ") has been transformed in (" << pointOutput.toString() << ")";
@@ -230,7 +204,7 @@ bool Follower::transformPointInBaseFrame(yarp::sig::Vector &pointInput, yarp::si
 
 bool Follower::transformPointInHeadFrame(std::string frame_src, yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput)
 {
-    bool res = m_transformClient->transformPoint(frame_src, "head_link", pointInput, pointOutput);
+    bool res = m_transformData.transformClient->transformPoint(frame_src, "head_link", pointInput, pointOutput);
     if(res)
     {
         //        yDebug() << "FOLLOWER: point (" << pointBallInput.toString() << ") has been transformed in (" << pointBallOutput.toString() << ")";
@@ -244,45 +218,9 @@ bool Follower::transformPointInHeadFrame(std::string frame_src, yarp::sig::Vecto
 }
 
 
-// Message handler. Just echo all received messages.
-bool Follower::respond(const Bottle& command, Bottle& reply)
-{
-
-
-    reply.clear();
-    cout << "Got something, echo is on. cmd=" << command.toString()<<endl;
-    if (command.get(0).asString()=="help")
-    {
-        reply.addVocab(Vocab::encode("many"));
-        reply.addString("Available commands are:");
-        reply.addString("start");
-        reply.addString("stop");
-        reply.addString("verbose 0/1");
-        return true;
-    }
-    else if(command.get(0).asString()=="start")
-    {
-        m_stateMachine_st=FollowerStateMachine::running;
-        yError() << "I'M RUNNING!!!!!";
-    }
-    else if(command.get(0).asString()=="stop")
-    {
-        m_stateMachine_st=FollowerStateMachine::configured;
-        yError() << "I'M CONFIGURED!!!!!";
-    }
-    else
-    {
-        reply.addString("you");
-        reply.addString("said");
-        reply.append(command);
-    }
-    m_rpcPort.reply(reply);
-
-}
 
 bool Follower::readConfig(yarp::os::ResourceFinder &rf, FollowerConfig &cfg)
 {
-
     Bottle config_group = rf.findGroup("GENERAL");
     if (config_group.isNull())
     {
@@ -290,21 +228,30 @@ bool Follower::readConfig(yarp::os::ResourceFinder &rf, FollowerConfig &cfg)
     }
     else
     {
-        if (config_group.check("factorDist2Vel")) { cfg.factorDist2Vel = config_group.find("factorDist2Vel").asDouble(); }
-        if (config_group.check("factorAng2Vel"))  { cfg.factorAng2Vel = config_group.find("factorAng2Vel").asDouble(); }
         if (config_group.check("inputPort"))  {cfg.inputPortName = config_group.find("inputPort").asString(); }
         if (config_group.check("outputPort"))  { cfg.outputPortName = config_group.find("outputPort").asString(); }
+        if (config_group.check("targetType"))  { cfg.targetType = config_group.find("targetType").asString(); }
+    }
+
+
+    config_group = rf.findGroup("TRAJECTORY");
+    if (config_group.isNull())
+    {
+        yError() << "Missing TRAJECTORY group! the module uses default value!";
+    }
+    else
+    {
+        if (config_group.check("factorDist2Vel")) { cfg.factorDist2Vel = config_group.find("factorDist2Vel").asDouble(); }
+        if (config_group.check("factorAng2Vel"))  { cfg.factorAng2Vel = config_group.find("factorAng2Vel").asDouble(); }
         if (config_group.check("distanceThreshold"))  { cfg.distanceThreshold = config_group.find("distanceThreshold").asDouble(); }
         if (config_group.check("angleThreshold"))  { cfg.angleThreshold = config_group.find("angleThreshold").asDouble(); }
-        if (config_group.check("targetType"))  { cfg.targetType = config_group.find("targetType").asString(); }
         if (config_group.check("angularVelLimit"))  { cfg.velocityLimits.angular = config_group.find("angularVelLimit").asDouble(); }
         if (config_group.check("linearVelLimit"))  { cfg.velocityLimits.linear = config_group.find("linearVelLimit").asDouble(); }
         if (config_group.check("angleMinBeforeMove"))  { cfg.angleMinBeforeMove = config_group.find("angleMinBeforeMove").asDouble(); }
     }
 
     cfg.print();
-    return true;
-}
+    return true;}
 
 
 
@@ -323,26 +270,17 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
 
-
     if(m_cfg.targetType == "redball")
     {
-        m_pointRetriver_ptr = new Ball3DPPointRetriver();
-        m_targetFrameId = m_redBallFrameId;
+        m_transformData.targetFrameId = m_transformData.redBallFrameId;
         m_targetType = FollowerTargetType::redball;
     }
     else //person or default
     {
-        m_pointRetriver_ptr = new Person3DPPointRetriver();
-        m_targetFrameId = m_personFrameId;
+        m_transformData.targetFrameId = m_transformData.personFrameId;
         m_targetType = FollowerTargetType::person;
     }
 
-
-    if(! m_pointRetriver_ptr->init("/follower/" + m_cfg.inputPortName +":i"))
-    {
-        yError() << "Error in initializing the Target Retriver";
-        return false;
-    }
 
     if(!m_outputPort2baseCtr.open("/follower/" + m_cfg.outputPortName + ":o"))
     {
@@ -363,61 +301,47 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
         m_simmanager_ptr->init("SIM_CER_ROBOT", "/follower/worldInterface/rpc");
     }
 
-//     if(!m_worldInterfacePort.open("/follower/worldInterface/rpc"))
-//     {
-//         yError() << "Error opening worldInterface rpc port!!";
-//         return false;
-//     }
-
     if(!initTransformClient())
         return false;
-
-    m_rpcPort.open("/follower/rpc");
-    attach(m_rpcPort);
 
     m_stateMachine_st=FollowerStateMachine::configured;
     return true;
 }
-// Interrupt function.
-bool Follower::interruptModule()
+
+
+// Close function, to perform cleanup.
+bool Follower::close()
 {
 
-    m_outputPortJoystick.interrupt();
-    m_outputPortJoystick.close();
-
-    m_pointRetriver_ptr->deinit();
-
+    m_stateMachine_st = FollowerStateMachine::none;
+    m_transformData.driver.close();
     m_outputPort2baseCtr.interrupt();
     m_outputPort2baseCtr.close();
 
     m_outputPort2gazeCtr.interrupt();
     m_outputPort2gazeCtr.close();
 
-//     m_worldInterfacePort.interrupt();
-//     m_worldInterfacePort.close();
-    if(isRunningInsimulation())
+    if(m_simmanager_ptr)
         m_simmanager_ptr->deinit();
 
-    if(m_pointRetriver_ptr!=nullptr)
-        m_pointRetriver_ptr->deinit();
 
     return true;
 }
-// Close function, to perform cleanup.
-bool Follower::close()
+
+
+Follower::Follower(): m_targetType(FollowerTargetType::person),m_onSimulation(true), m_simmanager_ptr(nullptr), m_stateMachine_st(FollowerStateMachine::none)
 {
-
-    m_driver.close();
-    // optional, close port explicitly
-    cout << "Calling close function\n";
-    return true;
+    m_transformData.transformClient = nullptr;
+    m_lastValidTarget.second = false;
 }
 
+Follower::~Follower()
+{
+    delete m_simmanager_ptr;
+}
 
-Follower::Follower():m_transformClient(nullptr), m_targetType(FollowerTargetType::person), m_pointRetriver_ptr(nullptr),
-m_onSimulation(true), m_simmanager_ptr(nullptr), m_stateMachine_st(FollowerStateMachine::none)
-{m_lastValidTarget.second=false;}
-Follower::~Follower(){;}
+FollowerTargetType Follower::getTargetType(void)
+{return m_targetType;}
 
 
 //------------------------------------------------
@@ -433,7 +357,7 @@ bool Follower::initTransformClient(void)
     propTfClient.put("remote", "/transformServer");
 
     // Try to open the driver
-    bool ok_open = m_driver.open(propTfClient);
+    bool ok_open = m_transformData.driver.open(propTfClient);
     if (!ok_open)
     {
         yError() << "Unable to open the FrameTransformClient driver.";
@@ -441,14 +365,14 @@ bool Follower::initTransformClient(void)
     }
 
     // Try to retrieve the view
-    bool ok_view = m_driver.view(m_transformClient);
-    if (!ok_view || m_transformClient == 0)
+    bool ok_view = m_transformData.driver.view(m_transformData.transformClient);
+    if (!ok_view || m_transformData.transformClient == 0)
     {
         yError() << "Unable to retrieve the FrameTransformClient view.";
         return false;
     }
 
-    //from now I can use m_transformClient
+    //from now I can use m_transformData.transformClient
     return true;
 }
 
@@ -574,9 +498,6 @@ bool Follower::sendCommand2GazeControl_lookAtPoint(const  yarp::sig::Vector &x)
 
     p.put("target-type","cartesian");
 
-//     Bottle target =  yarp::os::Bottle();
-//     Bottle &val = target.addList();
-//     val.addList().read(x);
     Bottle target;
     target.addList().read(x);
     p.put("target-location",target.get(0));
@@ -591,148 +512,3 @@ bool Follower::sendCommand2GazeControl_lookAtPoint(const  yarp::sig::Vector &x)
 }
 
 
-// void Follower::paintTargetPoint(const  yarp::sig::Vector &target)
-// {
-//     if( (!m_targetBoxIsCreated) && (m_worldInterfacePort.asPort().getOutputCount() >0 ))
-//     {
-//         yDebug() << "I'm about to create the target frame...";
-//         Bottle cmd, ans;
-//         cmd.clear();
-//         ans.clear();
-//
-//         cmd.addString("makeFrame");
-//         cmd.addDouble(0.2); //size
-//         cmd.addDouble(target[0]);
-//         cmd.addDouble(target[1]); //y
-//         cmd.addDouble(target[2]); //z
-//         cmd.addDouble(0); //r
-//         cmd.addDouble(0); //p
-//         cmd.addDouble(0); //y
-//         //orange color on central ball
-//         cmd.addInt(255); //red
-//         cmd.addInt(128); //green
-//         cmd.addInt(0); //blue
-//         cmd.addString("SIM_CER_ROBOT::mobile_base_body_link");
-//         cmd.addString(m_nameTargetBox); //box obj name
-//
-//         m_worldInterfacePort.write(cmd, ans);
-//         yDebug() << "follower: makeBox= " << cmd.toString() << "  Ans=" << ans.toString();
-//         if(ans.toString() == m_nameTargetBox)
-//         {
-//             m_targetBoxIsCreated = true;
-//             return;
-//         }
-//         else
-//             m_targetBoxIsCreated = false;
-//     }
-//
-//     if(!m_targetBoxIsCreated)
-//     {
-//         return;
-//     }
-//
-//     // Prapare bottle containg command to send in order to get the current position
-//     Bottle cmdGet, ansGet, cmdSet, ansSet;
-//     cmdGet.clear();
-//     ansGet.clear();
-//     cmdSet.clear();
-//     ansSet.clear();
-//     cmdGet.addString("getPose");
-//     cmdGet.addString(m_nameTargetBox);
-//     cmdGet.addString("SIM_CER_ROBOT::mobile_base_body_link");
-//     m_worldInterfacePort.write(cmdGet, ansGet);
-//     //read the answer
-//
-//     //send command for new position
-//     cmdSet.addString("setPose");
-//     cmdSet.addString(m_nameTargetBox);
-//     cmdSet.addDouble(target[0]);
-//     cmdSet.addDouble(target[1]);
-//     cmdSet.addDouble(target[2]); // z
-//     cmdSet.addDouble(ansGet.get(3).asDouble()); // r
-//     cmdSet.addDouble(ansGet.get(4).asDouble()); // p
-//     cmdSet.addDouble(ansGet.get(5).asDouble()); // y
-//     cmdSet.addString("SIM_CER_ROBOT::mobile_base_body_link");
-//     m_worldInterfacePort.write(cmdSet, ansSet);
-//
-// }
-//
-//
-// void Follower::paintTargetPoint2(yarp::sig::Vector &target)
-// {
-//     static bool isCreated=false;
-//     static const std::string nameTargetBox="frameGaze";
-//     yarp::sig::Vector targetOutput;
-//
-//     if(!transformPointInHeadFrame(m_targetFrameId, target, targetOutput))
-//     {
-//         yError() << "I cannot piant the source frame!!";
-//         return;
-//     }
-//
-//
-//     if( (!isCreated) && (m_worldInterfacePort.asPort().getOutputCount() >0 ))
-//     {
-//         yDebug() << "I'm about to create the target frame...";
-//         Bottle cmd, ans;
-//         cmd.clear();
-//         ans.clear();
-//
-//         cmd.addString("makeFrame");
-//         cmd.addDouble(0.2); //size
-//         cmd.addDouble(targetOutput[0]);
-//         cmd.addDouble(targetOutput[1]); //y
-//         cmd.addDouble(targetOutput[2]); //z
-//         cmd.addDouble(0); //r
-//         cmd.addDouble(0); //p
-//         cmd.addDouble(0); //y
-//         //orange color on central ball
-//         cmd.addInt(0); //red
-//         cmd.addInt(0); //green
-//         cmd.addInt(0); //blue
-//         cmd.addString("SIM_CER_ROBOT::head_link");
-//         cmd.addString(nameTargetBox); //box obj name
-//
-//         m_worldInterfacePort.write(cmd, ans);
-//         yDebug() << "follower: makeFramegaze= " << cmd.toString() << "  Ans=" << ans.toString();
-//         if(ans.toString() == nameTargetBox)
-//         {
-//             isCreated = true;
-//             return;
-//         }
-//         else
-//             isCreated = false;
-//     }
-//
-//     if(!isCreated)
-//     {
-//         return;
-//     }
-//
-//     // Prapare bottle containg command to send in order to get the current position
-//     Bottle cmdGet, ansGet, cmdSet, ansSet;
-//     cmdGet.clear();
-//     ansGet.clear();
-//     cmdSet.clear();
-//     ansSet.clear();
-//     cmdGet.addString("getPose");
-//     cmdGet.addString(nameTargetBox);
-//     cmdGet.addString("SIM_CER_ROBOT::head_link");
-//     m_worldInterfacePort.write(cmdGet, ansGet);
-//     //read the answer
-//
-//     //send command for new position
-//     cmdSet.addString("setPose");
-//     cmdSet.addString(nameTargetBox);
-//     cmdSet.addDouble(targetOutput[0]);
-//     cmdSet.addDouble(targetOutput[1]);
-//     cmdSet.addDouble(targetOutput[2]); // z
-//     cmdSet.addDouble(ansGet.get(3).asDouble()); // r
-//     cmdSet.addDouble(ansGet.get(4).asDouble()); // p
-//     cmdSet.addDouble(ansGet.get(5).asDouble()); // y
-//     cmdSet.addString("SIM_CER_ROBOT::head_link");
-//     m_worldInterfacePort.write(cmdSet, ansSet);
-//
-// }
-//
-//

@@ -46,8 +46,8 @@ Target_t Ball3DPPointRetriver::getTarget(void)
 
     Bottle *b = m_inputPort.read();
 
-    //     yDebug() << "Vedo pallina " << b->get(6).asDouble();
-    //     yDebug() << "pos pallina" << b->get(0).asDouble() << b->get(1).asDouble() << b->get(2).asDouble();
+         yDebug() << "Vedo pallina " << b->get(6).asDouble();
+         yDebug() << "pos pallina" << b->get(0).asDouble() << b->get(1).asDouble() << b->get(2).asDouble();
     bool ballIsTracked = (b->get(6).asDouble() == 1.0) ? true : false;
 
     if(!ballIsTracked)
