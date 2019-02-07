@@ -36,6 +36,12 @@ bool SimManager::init(std::string robotName, std::string rpcNamePort)
 
 bool SimManager::deinit(void)
 {
+    gazeFramePainter_ptr->erase();
+    targetFramePainter_ptr->erase();
+
+    delete gazeFramePainter_ptr;
+    delete targetFramePainter_ptr;
+
     m_worldInterfacePort.interrupt();
     m_worldInterfacePort.close();
     return true;
@@ -117,4 +123,21 @@ void SimFramePainter::paint(const yarp::sig::Vector &point)
     cmdSet.addString(m_frameIdOfRef);
     m_worldInterfacePort_ptr->write(cmdSet, ansSet);
 
+}
+
+void SimFramePainter::erase(void)
+{
+    if((m_isCreated) && (m_worldInterfacePort_ptr->asPort().getOutputCount() >0 ))
+    {
+        yDebug() << "I'm about to delete the frame called" << m_nameOfFrame;
+        Bottle cmd, ans;
+        cmd.clear();
+        ans.clear();
+
+        cmd.addString("deleteObject");
+        cmd.addString(m_nameOfFrame); //box obj name
+
+        m_worldInterfacePort_ptr->write(cmd, ans);
+        yDebug() << "follower: makeFrame= " << cmd.toString() << "  Ans=" << ans.toString();
+    }
 }

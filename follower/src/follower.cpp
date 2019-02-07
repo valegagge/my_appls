@@ -313,6 +313,7 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
 bool Follower::close()
 {
 
+    m_stateMachine_st = FollowerStateMachine::none;
     m_transformData.driver.close();
     m_outputPort2baseCtr.interrupt();
     m_outputPort2baseCtr.close();
@@ -336,7 +337,7 @@ Follower::Follower(): m_targetType(FollowerTargetType::person),m_onSimulation(tr
 
 Follower::~Follower()
 {
-    delete m_simmanager_ptr;;
+    delete m_simmanager_ptr;
 }
 
 FollowerTargetType Follower::getTargetType(void)

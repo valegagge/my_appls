@@ -146,6 +146,7 @@ bool FollowerModule::configure(yarp::os::ResourceFinder &rf)
 // Interrupt function.
 bool FollowerModule::interruptModule()
 {
+    yError() <<"--------- sono in interruptModule--------";
     m_rpcPort.interrupt();
     m_rpcPort.close();
 
@@ -159,6 +160,7 @@ bool FollowerModule::interruptModule()
 bool FollowerModule::close()
 {
 
+    yError() <<"++++++++++++++++ sono in close ++++++++++==";
     if(m_pointRetriver_ptr!=nullptr)
         m_pointRetriver_ptr->deinit();
 
