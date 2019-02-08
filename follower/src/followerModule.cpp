@@ -140,7 +140,9 @@ bool FollowerModule::configure(yarp::os::ResourceFinder &rf)
 
     m_rpcPort.open("/follower/rpc");
     attach(m_rpcPort);
-
+    #ifdef TICK_SERVER
+    TickServer::configure_tick_server("/follower");
+    #endif
     return true;
 }
 // Interrupt function.
@@ -176,6 +178,30 @@ bool FollowerModule::close()
 FollowerModule::FollowerModule():m_period(m_defaultPeriod), m_targetType(FollowerTargetType::person)
 {}
 FollowerModule::~FollowerModule(){;}
+
+
+#ifdef TICK_SERVER
+ReturnStatus FollowerModule::request_tick(const std::string& params)
+{
+    m_follower.start();
+    return ReturnStatus::BT_RUNNING;
+}
+
+ReturnStatus FollowerModule::request_status()
+{
+    if(FollowerStateMachine::running == m_follower.getState())
+        return ReturnStatus::BT_RUNNING;
+    else
+        return ReturnStatus::BT_HALTED;
+}
+
+ReturnStatus FollowerModule::request_halt()
+{
+    m_follower.stop();
+    return ReturnStatus::BT_HALTED;
+}
+
+#endif
 
 
 //------------------------------------------------

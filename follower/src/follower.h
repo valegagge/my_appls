@@ -89,6 +89,7 @@ public:
     bool stop(void);
     bool close();
     FollowerTargetType getTargetType(void);
+    FollowerStateMachine getState(void);
 
 private:
 

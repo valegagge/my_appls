@@ -344,6 +344,11 @@ FollowerTargetType Follower::getTargetType(void)
 {return m_targetType;}
 
 
+FollowerStateMachine Follower::getState(void)
+{
+    return m_stateMachine_st;
+}
+
 //------------------------------------------------
 // private function
 //------------------------------------------------

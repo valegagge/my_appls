@@ -15,9 +15,19 @@
 #include "TargetRetriver.h"
 #include "follower.h"
 
+#ifdef TICK_SERVER
+#include <tick_server.h>
+#include <ReturnStatus.h>
+#endif
 
 
-class FollowerModule:public yarp::os::RFModule
+
+
+#ifdef TICK_SERVER
+class FollowerModule:public yarp::os::RFModule, public TickServer
+#else
+class FollowerModule : public RFModule
+#endif
 {
 public:
 
@@ -35,6 +45,13 @@ public:
     bool interruptModule();
 
     bool close();
+
+    #ifdef TICK_SERVER
+    ReturnStatus request_tick(const std::string& params = "") override;
+    ReturnStatus request_status() override;
+    ReturnStatus request_halt() override;
+    #endif
+
 private:
 
     Follower m_follower;
