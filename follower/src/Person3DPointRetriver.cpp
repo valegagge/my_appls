@@ -5,18 +5,18 @@
  *                                                                            *
  ******************************************************************************/
 /**
- * @file Person3DRetriver.cpp
+ * @file Person3DPPointRetriver.cpp
  * @authors: Valentina Gaggero <valentina.gaggero@iit.it>
  */
 
-#include "Person3DRetriver.h"
+#include "Person3DPointRetriver.h"
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
 
 using namespace yarp::os;
 using namespace assistive_rehab;
 
-Target_t Person3DPPointRetriver::getTarget(void)
+Target_t Person3DPointRetriver::getTarget(void)
 {
     std::vector<double> point3d = {0,0,0};
 
@@ -36,11 +36,13 @@ Target_t Person3DPPointRetriver::getTarget(void)
     {
         Property prop(b1->toString().c_str());
         m_sk_target.update(prop);
-        yDebug() << "Person3DPPointRetriver: skeleton is updated!!!";
+        if(m_debugOn)
+            yDebug() << "Person3DPPointRetriver: skeleton is updated!";
     }
     else
     {
-        yError() << "Person3DPPointRetriver: non c'e' tag!";
+        if(m_debugOn)
+            yDebug() << "Person3DPPointRetriver: tag not exist!";
         return std::make_pair(std::move (point3d), false);
     }
 
@@ -62,16 +64,19 @@ Target_t Person3DPPointRetriver::getTarget(void)
             point3d[0] = v[0];
             point3d[1] = v[1];
             point3d[2] = v[2];
-            yDebug() << "Person3DPPointRetriver: get the point!! OK!!";
+            if(m_debugOn)
+                yDebug() << "Person3DPPointRetriver: get the point!! OK!!";
         }
         else
         {
-            yError() << "Person3DPPointRetriver: the sk is not updated!";
+            if(m_debugOn)
+                yError() << "Person3DPPointRetriver: the skeleton is not updated!";
         }
     }
     else
     {
-        yError() << "Person3DPPointRetriver: shoulder_center point is null!";
+        if(m_debugOn)
+            yError() << "Person3DPPointRetriver: shoulder_center point is null!";
     }
 
     return std::make_pair(std::move (point3d), true);

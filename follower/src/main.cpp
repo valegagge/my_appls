@@ -1,3 +1,15 @@
+/******************************************************************************
+ *                                                                            *
+ * Copyright (C) 2019 Fondazione Istituto Italiano di Tecnologia (IIT)        *
+ * All Rights Reserved.                                                       *
+ *                                                                            *
+ ******************************************************************************/
+
+/**
+ * @file main.cpp
+ * @authors: Valentina Gaggero <valentina.gaggero@iit.it>
+ */
+
 #include "FollowerModule.h"
 #include <yarp/os/ResourceFinder.h>
 #include <yarp/os/Network.h>

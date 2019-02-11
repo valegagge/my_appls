@@ -1,21 +1,32 @@
+
 /******************************************************************************
  *                                                                            *
  * Copyright (C) 2019 Fondazione Istituto Italiano di Tecnologia (IIT)        *
  * All Rights Reserved.                                                       *
  *                                                                            *
  ******************************************************************************/
+
 /**
- * @file Person3DRetriver.cpp
+ * @file Ball3DPointRetriver.h
  * @authors: Valentina Gaggero <valentina.gaggero@iit.it>
  */
-#include "TargetRetriver.h"
-#include "AssistiveRehab/skeleton.h"
 
-class Person3DPPointRetriver : public TargetRetriver
+#ifndef BALL3DPOINTRETRIVER_H
+#define BALL3DPOINTRETRIVER_H
+
+
+#include "TargetRetriver.h"
+
+class Ball3DPointRetriver : public TargetRetriver
 {
 public:
     Target_t getTarget(void);
+     Ball3DPointRetriver();
+    void getTargetPixelCoord(double &u, double &v);
 private:
-    assistive_rehab::SkeletonWaist m_sk_target;
+
+    double m_ballPointU;
+    double m_ballPointV;
 };
 
+#endif

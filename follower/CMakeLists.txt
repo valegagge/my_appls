@@ -20,6 +20,20 @@ endif()
 
 include_directories (${ASSISTIVE_REHAB_INC} ${YARP_CV})
 
-add_executable(follower ./src/follower.h ./src/FollowerModule.h ./src/TargetRetriver.h ./src/Ball3DPointRetriver.cpp ./src/Person3DRetriver.cpp ./src/simFramePainter.h ./src/simFramePainter.cpp ./src/Person3DRetriver.h ./src/follower.cpp ./src/followerModule.cpp ./src/main.cpp  ${ASSISTIVE_REHAB_SRC})
+add_executable(follower
+                ./src/Follower.h
+                ./src/Follower.cpp
+                ./src/FollowerModule.h
+                ./src/FollowerModule.cpp
+                ./src/TargetRetriver.h
+                ./src/Ball3DPointRetriver.h
+                ./src/Person3DPointRetriver.h
+                ./src/TargetRestriver.cpp
+                ./src/Ball3DPointRetriver.cpp
+                ./src/Person3DPointRetriver.cpp
+                ./src/SimFramePainter.h
+                ./src/SimFramePainter.cpp
+                ./src/main.cpp
+                ${ASSISTIVE_REHAB_SRC})
 # link with YARP libraries
 target_link_libraries(follower ${YARP_LIBRARIES} ${OpenCV_LIBS} YARPBTModules )

@@ -1,3 +1,15 @@
+/******************************************************************************
+ *                                                                            *
+ * Copyright (C) 2019 Fondazione Istituto Italiano di Tecnologia (IIT)        *
+ * All Rights Reserved.                                                       *
+ *                                                                            *
+ ******************************************************************************/
+
+/**
+ * @file FollowerModule.cpp
+ * @authors: Valentina Gaggero <valentina.gaggero@iit.it>
+ */
+
 #include <iostream>
 #include <iomanip>
 #include <yarp/os/Network.h>
@@ -11,7 +23,8 @@
 #include <math.h>
 
 #include "FollowerModule.h"
-#include "Person3DRetriver.h"
+#include "Person3DPointRetriver.h"
+#include "Ball3DPointRetriver.h"
 
 
 #include "../../../yarp/src/libYARP_OS/include/yarp/os/Bottle.h"
@@ -37,10 +50,10 @@ bool FollowerModule::updateModule()
     switch(m_targetType)
     {
         case FollowerTargetType::person:
-        { targetpoint= (dynamic_cast<Person3DPPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
+        { targetpoint= (dynamic_cast<Person3DPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
 
         case FollowerTargetType::redball:
-        { targetpoint= (dynamic_cast<Ball3DPPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
+        { targetpoint= (dynamic_cast<Ball3DPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
 
         default: break;
     };
@@ -124,11 +137,11 @@ bool FollowerModule::configure(yarp::os::ResourceFinder &rf)
     // 3) initialize the target retriever
     if(m_targetType == FollowerTargetType::redball)
     {
-        m_pointRetriver_ptr = new Ball3DPPointRetriver();
+        m_pointRetriver_ptr = new Ball3DPointRetriver();
     }
     else //person or default
     {
-        m_pointRetriver_ptr = new Person3DPPointRetriver();
+        m_pointRetriver_ptr = new Person3DPointRetriver();
     }
 
 

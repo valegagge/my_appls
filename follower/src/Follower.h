@@ -1,4 +1,17 @@
+/******************************************************************************
+ *                                                                            *
+ * Copyright (C) 2019 Fondazione Istituto Italiano di Tecnologia (IIT)        *
+ * All Rights Reserved.                                                       *
+ *                                                                            *
+ ******************************************************************************/
 
+/**
+ * @file Follower.h
+ * @authors: Valentina Gaggero <valentina.gaggero@iit.it>
+ */
+
+#ifndef FOLLOWER_H
+#define FOLLOWER_H
 
 #include <yarp/os/RFModule.h>
 #include <yarp/os/RateThread.h>
@@ -15,7 +28,7 @@
 
 
 #include "TargetRetriver.h"
-#include "simFramePainter.h"
+#include "SimFramePainter.h"
 
 
 class FollowerConfig
@@ -34,7 +47,12 @@ public:
         double linear;
     }velocityLimits;
     double angleMinBeforeMove;
-    bool paintGazeFrame;
+    struct
+    {
+        bool enabled;
+        bool paintGazeFrame;
+        bool startWithoutCommand;
+    }debug;
 
     FollowerConfig()
     {
@@ -49,7 +67,9 @@ public:
         velocityLimits.angular = 30; //degree/sec
         velocityLimits.linear = 3; //m/s
         angleMinBeforeMove = 10.0; //degree
-        paintGazeFrame = false;
+        debug.enabled=false;
+        debug.paintGazeFrame = false;
+        debug.startWithoutCommand = false;
     }
 
     void print(void)
@@ -62,6 +82,10 @@ public:
         yInfo() << "distanceThreshold=" << distanceThreshold;
         yInfo() << "angleThreshold=" << angleThreshold;
         yInfo() << "targetType=" << targetType;
+        yInfo() << "angularVelLimit=" << velocityLimits.angular;
+        yInfo() << "linearVelLimit=" << velocityLimits.linear;
+        yInfo() << "angleMinBeforeMove=" << angleMinBeforeMove;
+
     }
 };
 
@@ -113,14 +137,11 @@ private:
     yarp::os::BufferedPort<yarp::os::Property>  m_outputPort2gazeCtr; //I send commands to the gaze controller
 
     FollowerConfig m_cfg;
-    FollowerTargetType         m_targetType;
+    FollowerTargetType m_targetType;
 
     FollowerStateMachine m_stateMachine_st;
     Target_t m_lastValidTarget;
 
-
-    //get transform matrix from left camera to mobile base. Pf3dtraker use the left camera.
-    bool getMatrix(yarp::sig::Matrix &transform);
 
     bool transformPointInBaseFrame(yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput);
     bool transformPointInHeadFrame(std::string frame_src, yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput);
@@ -142,8 +163,9 @@ private:
     bool moveRobot(void);
     yarp::os::BufferedPort<yarp::os::Bottle>  m_outputPortJoystick;//test only!!!used in sendOutput
     void sendOutputLikeJoystick(); //only for test. it simulates joystick
+    //get transform matrix from left camera to mobile base. Pf3dtraker use the left camera.
+    bool getMatrix(yarp::sig::Matrix &transform);
+};
 
+#endif
 
-
-
- };

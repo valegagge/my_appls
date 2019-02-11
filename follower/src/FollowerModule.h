@@ -1,3 +1,14 @@
+/******************************************************************************
+ *                                                                            *
+ * Copyright (C) 2019 Fondazione Istituto Italiano di Tecnologia (IIT)        *
+ * All Rights Reserved.                                                       *
+ *                                                                            *
+ ******************************************************************************/
+
+/**
+ * @file FollowerModule.h
+ * @authors: Valentina Gaggero <valentina.gaggero@iit.it>
+ */
 
 
 #include <yarp/os/RFModule.h>
@@ -13,7 +24,7 @@
 #include <string>
 
 #include "TargetRetriver.h"
-#include "follower.h"
+#include "Follower.h"
 
 #ifdef TICK_SERVER
 #include <tick_server.h>

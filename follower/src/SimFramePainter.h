@@ -7,7 +7,7 @@
  ******************************************************************************/
 
 /**
- * @file TargetRetriver.h
+ * @file SimFramePainter.h
  * @authors: Valentina Gaggero <valentina.gaggero@iit.it>
  */
 
@@ -20,11 +20,11 @@
 #include <string>
 
 
-//nota: cosa succede se prova a mandare sulla porta non aperata??? e' safe o mi devo tenere uno stato di inited??
+
 class SimFramePainter
 {
 public:
-    SimFramePainter(std::string name, std::string frameRef, yarp::os::RpcClient* worldPort ):
+    SimFramePainter(std::string name, std::string frameRef, yarp::os::RpcClient* worldPort, bool debugOn=false ):
     m_isCreated(false),
     m_nameOfFrame(name),
     m_worldInterfacePort_ptr(worldPort),
@@ -36,6 +36,7 @@ private:
     std::string m_nameOfFrame;
     yarp::os::RpcClient* m_worldInterfacePort_ptr; //shared pointer
     std::string m_frameIdOfRef;
+    bool m_debugOn;
 };
 
 
@@ -54,6 +55,6 @@ private:
 
 };
 
-
+//NOTE: What happen if I try to use a not opened port? I need a status variable?? (TODO check)
 
 #endif

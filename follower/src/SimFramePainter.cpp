@@ -11,7 +11,7 @@
  * @authors: Valentina Gaggero <valentina.gaggero@iit.it>
  */
 
-#include "simFramePainter.h"
+#include "SimFramePainter.h"
 
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
