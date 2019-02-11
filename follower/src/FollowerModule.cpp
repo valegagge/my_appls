@@ -10,26 +10,19 @@
  * @authors: Valentina Gaggero <valentina.gaggero@iit.it>
  */
 
-#include <iostream>
-#include <iomanip>
-#include <yarp/os/Network.h>
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
-#include <yarp/os/Stamp.h>
 #include <yarp/sig/Vector.h>
 #include <yarp/os/Bottle.h>
-#include <yarp/os/Time.h>
-
-#include <math.h>
 
 #include "FollowerModule.h"
 #include "Person3DPointRetriver.h"
 #include "Ball3DPointRetriver.h"
 
 
-#include "../../../yarp/src/libYARP_OS/include/yarp/os/Bottle.h"
 using namespace std;
 using namespace yarp::os;
+using namespace FollowerTarget;
 
 
 //------------------------ buffer helper test ---------------------

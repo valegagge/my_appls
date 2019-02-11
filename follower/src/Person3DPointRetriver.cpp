@@ -15,6 +15,7 @@
 
 using namespace yarp::os;
 using namespace assistive_rehab;
+using namespace FollowerTarget;
 
 Target_t Person3DPointRetriver::getTarget(void)
 {

@@ -8,14 +8,19 @@
  * @file Person3DPointRetriver.h
  * @authors: Valentina Gaggero <valentina.gaggero@iit.it>
  */
+#ifndef PERSON3DPOINTRESTRIVER_H
+#define PERSON3DPOINTRESTRIVER_H
 #include "TargetRetriver.h"
 #include "AssistiveRehab/skeleton.h"
-
-class Person3DPointRetriver : public TargetRetriver
+namespace FollowerTarget
 {
-public:
-    Target_t getTarget(void);
-private:
-    assistive_rehab::SkeletonWaist m_sk_target;
-};
+    class Person3DPointRetriver : public TargetRetriver
+    {
+    public:
+        Target_t getTarget(void);
+    private:
+        assistive_rehab::SkeletonWaist m_sk_target;
+    };
+}
+#endif
 

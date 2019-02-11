@@ -10,24 +10,36 @@
  * @authors: Valentina Gaggero <valentina.gaggero@iit.it>
  */
 
-#include <iostream>
-#include <iomanip>
-#include <yarp/os/Network.h>
+#include <math.h>
+
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
 #include <yarp/os/Stamp.h>
 #include <yarp/sig/Matrix.h>
 #include <yarp/sig/Vector.h>
 #include <yarp/os/Bottle.h>
-#include <yarp/os/Time.h>
-
-#include <math.h>
 
 #include "Follower.h"
 
 
 using namespace std;
 using namespace yarp::os;
+using namespace FollowerTarget;
+
+void FollowerConfig::print(void)
+{
+    yInfo() << "The follower module has been configure with following values";
+    yInfo() << "factorDist2Vel=" << factorDist2Vel;
+    yInfo() << "factorAng2Vel=" << factorAng2Vel;
+    yInfo() << "inputPortName=" << inputPortName;
+    yInfo() << "factorDist2Vel=" << outputPortName;
+    yInfo() << "distanceThreshold=" << distanceThreshold;
+    yInfo() << "angleThreshold=" << angleThreshold;
+    yInfo() << "targetType=" << targetType;
+    yInfo() << "angularVelLimit=" << velocityLimits.angular;
+    yInfo() << "linearVelLimit=" << velocityLimits.linear;
+    yInfo() << "angleMinBeforeMove=" << angleMinBeforeMove;
+}
 
 Follower::Follower(): m_targetType(FollowerTargetType::person),m_onSimulation(true), m_simmanager_ptr(nullptr), m_stateMachine_st(FollowerStateMachine::none)
 {
@@ -480,22 +492,22 @@ bool Follower::moveRobot(void)
     {
         //stop moveRobot
         sendCommand2BaseControl(0.0, 0.0, 0.0);
-        cout << "_";
+        //cout << "_";
         return true;
 
     }
     if(currTime-startTime < 10.0)
     {
         sendCommand2BaseControl(0.0, 0.0, 10.0*direction );
-        cout << ".";
+        //cout << ".";
     }
     else
     {
         startTime = yarp::os::Time::now();
         (direction >0)? direction = -1.0 : direction=1.0;
-        cout <<"|";
+        //cout <<"|";
     }
-    cout.flush();
+    //cout.flush();
     return true;
 }
 

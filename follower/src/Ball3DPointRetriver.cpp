@@ -17,6 +17,7 @@
 #include <yarp/os/LogStream.h>
 
 using namespace yarp::os;
+using namespace FollowerTarget;
 
 Ball3DPointRetriver::Ball3DPointRetriver(): m_ballPointU(0.0), m_ballPointV(0.0) {;}
 

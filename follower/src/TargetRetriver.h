@@ -17,23 +17,25 @@
 #include <yarp/os/BufferedPort.h>
 #include <yarp/os/Bottle.h>
 #include <vector>
-#include <utility>
+//#include <utility>
 
-using Target_t = std::pair<std::vector<double>, bool>;
-
-class TargetRetriver
+namespace FollowerTarget
 {
-public:
-    TargetRetriver();
-    virtual Target_t getTarget(void)=0;
-    bool init(std::string inputPortName, bool debugOn=false);
-    bool deinit(void);
-protected:
-    std::vector<double> m_target;
-    yarp::os::BufferedPort<yarp::os::Bottle> m_inputPort;
+    using Target_t = std::pair<std::vector<double>, bool>;
 
-    bool m_debugOn;
-};
+    class TargetRetriver
+    {
+    public:
+        TargetRetriver();
+        virtual Target_t getTarget(void)=0;
+        bool init(std::string inputPortName, bool debugOn=false);
+        bool deinit(void);
+    protected:
+        std::vector<double> m_target;
+        yarp::os::BufferedPort<yarp::os::Bottle> m_inputPort;
 
+        bool m_debugOn;
+    };
 
+}
 #endif

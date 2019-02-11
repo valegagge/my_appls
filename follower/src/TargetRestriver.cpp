@@ -17,6 +17,7 @@
 #include <yarp/os/LogStream.h>
 
 using namespace yarp::os;
+using namespace FollowerTarget;
 
 TargetRetriver::TargetRetriver(): m_debugOn(false){;}
 

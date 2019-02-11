@@ -18,6 +18,7 @@
 #include <yarp/os/Bottle.h>
 #include <yarp/os/SystemClock.h>
 using namespace yarp::os;
+using namespace FollowerTarget;
 
 
 bool SimManager::init(std::string robotName, std::string rpcNamePort)
@@ -38,7 +39,7 @@ bool SimManager::deinit(void)
 {
     gazeFramePainter_ptr->erase();
     targetFramePainter_ptr->erase();
-    SystemClock::delaySystem(0.1); //serve per avere la risposta??? guarda cosa scrive in ans.
+    SystemClock::delaySystem(0.1); //Do I need it? TODO
     m_worldInterfacePort.interrupt();
     m_worldInterfacePort.close();
 

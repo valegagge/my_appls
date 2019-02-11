@@ -17,16 +17,18 @@
 
 #include "TargetRetriver.h"
 
-class Ball3DPointRetriver : public TargetRetriver
+namespace FollowerTarget
 {
-public:
-    Target_t getTarget(void);
-     Ball3DPointRetriver();
-    void getTargetPixelCoord(double &u, double &v);
-private:
+    class Ball3DPointRetriver : public TargetRetriver
+    {
+    public:
+        Target_t getTarget(void);
+        Ball3DPointRetriver();
+        void getTargetPixelCoord(double &u, double &v);
+    private:
 
-    double m_ballPointU;
-    double m_ballPointV;
-};
-
+        double m_ballPointU;
+        double m_ballPointV;
+    };
+}
 #endif
