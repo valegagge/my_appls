@@ -14,6 +14,7 @@
 #define FOLLOWER_H
 
 #include <string>
+#include <mutex>
 
 #include <yarp/os/ResourceFinder.h>
 #include <yarp/os/BufferedPort.h>
@@ -121,6 +122,8 @@ namespace FollowerTarget
 
         FollowerStateMachine m_stateMachine_st;
         Target_t m_lastValidTarget;
+
+        std::mutex m_mutex;
 
 
         bool transformPointInBaseFrame(yarp::sig::Vector &pointInput, yarp::sig::Vector &pointOutput);

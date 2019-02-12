@@ -11,6 +11,7 @@
  */
 
 #include <string>
+#include <memory>
 
 #include <yarp/os/RFModule.h>
 #include <yarp/os/BufferedPort.h>
@@ -66,7 +67,7 @@ private:
     double const m_defaultPeriod=0.01;
 
     FollowerTarget::FollowerTargetType         m_targetType;
-    FollowerTarget::TargetRetriver*            m_pointRetriver_ptr;
+    std::unique_ptr<FollowerTarget::TargetRetriver> m_pointRetriver_ptr;
 
     yarp::os::Port m_rpcPort;
 

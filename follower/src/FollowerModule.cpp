@@ -40,17 +40,18 @@ bool FollowerModule::updateModule()
     Target_t targetpoint({0,0,0}, false);
 
 
-    switch(m_targetType)
-    {
-        case FollowerTargetType::person:
-        { targetpoint= (dynamic_cast<Person3DPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
+//     switch(m_targetType)
+//     {
+//         case FollowerTargetType::person:
+//         { targetpoint= (dynamic_cast<Person3DPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
+//
+//         case FollowerTargetType::redball:
+//         { targetpoint= (dynamic_cast<Ball3DPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
+//
+//         default: break;
+//     };
 
-        case FollowerTargetType::redball:
-        { targetpoint= (dynamic_cast<Ball3DPointRetriver*>(m_pointRetriver_ptr))->getTarget(); break;}
-
-        default: break;
-    };
-
+    targetpoint = m_pointRetriver_ptr->getTarget();
     m_follower.followTarget(targetpoint);
 
     return true;
@@ -126,19 +127,25 @@ bool FollowerModule::configure(yarp::os::ResourceFinder &rf)
         if (config_group.check("period"))  { m_period = config_group.find("period").asBool(); }
         if (config_group.check("inputPort"))  {inputPortName = config_group.find("inputPort").asString(); }
     }
+    bool debugOn = false;
+    Bottle debug_group = rf.findGroup("DEBUG");
+    if (!debug_group.isNull())
+    {
+        if (debug_group.check("enable"))  { debugOn = debug_group.find("enable").asBool(); }
+    }
 
     // 3) initialize the target retriever
     if(m_targetType == FollowerTargetType::redball)
     {
-        m_pointRetriver_ptr = new Ball3DPointRetriver();
+        m_pointRetriver_ptr = std::make_unique<Ball3DPointRetriver>();
     }
     else //person or default
     {
-        m_pointRetriver_ptr = new Person3DPointRetriver();
+        m_pointRetriver_ptr = std::make_unique<Person3DPointRetriver>();
     }
 
 
-    if(! m_pointRetriver_ptr->init("/follower/" + inputPortName +":i"))
+    if(! m_pointRetriver_ptr->init("/follower/" + inputPortName +":i", debugOn))
     {
         yError() << "Error in initializing the Target Retriever";
         return false;
@@ -154,7 +161,6 @@ bool FollowerModule::configure(yarp::os::ResourceFinder &rf)
 // Interrupt function.
 bool FollowerModule::interruptModule()
 {
-    yError() <<"--------- sono in interruptModule--------";
     m_rpcPort.interrupt();
     m_rpcPort.close();
 
@@ -167,13 +173,10 @@ bool FollowerModule::interruptModule()
 // Close function, to perform cleanup.
 bool FollowerModule::close()
 {
-
-    yError() <<"++++++++++++++++ sono in close ++++++++++==";
     if(m_pointRetriver_ptr!=nullptr)
         m_pointRetriver_ptr->deinit();
 
-    delete m_pointRetriver_ptr;
-    m_pointRetriver_ptr = nullptr;
+    m_pointRetriver_ptr.reset();
 
     m_follower.close();
 

@@ -71,10 +71,14 @@ void Follower::followTarget(Target_t &target)
             yDebug() << "I received a valid target!!! (I see the target=" << target.first[0] << target.first[1] << target.first[2] <<")" ;
     }
 
-    if(m_stateMachine_st != FollowerStateMachine::running)
     {
-        return;
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if(m_stateMachine_st != FollowerStateMachine::running)
+        {
+            return;
+        }
     }
+
 
 
     //2. transform the ball-point from camera point of view to base point of view.
@@ -204,12 +208,13 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
     if(m_onSimulation)
     {
         m_simmanager_ptr = new SimManager();
-        m_simmanager_ptr->init("SIM_CER_ROBOT", "/follower/worldInterface/rpc");
+        m_simmanager_ptr->init("SIM_CER_ROBOT", "/follower/worldInterface/rpc", m_cfg.debug.enabled);
     }
 
     if(!initTransformClient())
         return false;
 
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_stateMachine_st=FollowerStateMachine::configured;
     return true;
 }
@@ -219,6 +224,7 @@ bool Follower::configure(yarp::os::ResourceFinder &rf)
 bool Follower::close()
 {
 
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_stateMachine_st = FollowerStateMachine::none;
     m_transformData.driver.close();
     m_outputPort2baseCtr.interrupt();
@@ -237,6 +243,7 @@ bool Follower::close()
 
 bool Follower::start()
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_stateMachine_st = FollowerStateMachine::running;
     return true;
 }
@@ -244,6 +251,7 @@ bool Follower::start()
 
 bool Follower::stop()
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_stateMachine_st = FollowerStateMachine::configured;
     return true;
 }
@@ -258,6 +266,7 @@ FollowerTargetType Follower::getTargetType(void)
 
 FollowerStateMachine Follower::getState(void)
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     return m_stateMachine_st;
 }
 

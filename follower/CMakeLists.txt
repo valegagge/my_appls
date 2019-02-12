@@ -1,8 +1,15 @@
 cmake_minimum_required(VERSION 3.0)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # find YARP
 find_package(YARP REQUIRED)
 find_package( OpenCV REQUIRED )
 find_package(YARPBTModules)
+
+
 # set up our program
 set(ASSISTIVE_REHAB_INC         $ENV{ROBOT_CODE}/assistive-rehab/lib/include)
 set(YARP_CV                     $ENV{ROBOT_CODE}/yarp/src/libYARP_cv/include)

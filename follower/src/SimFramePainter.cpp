@@ -21,16 +21,17 @@ using namespace yarp::os;
 using namespace FollowerTarget;
 
 
-bool SimManager::init(std::string robotName, std::string rpcNamePort)
+bool SimManager::init(std::string robotName, std::string rpcNamePort, bool debugOn)
 {
-    if(!m_worldInterfacePort.open(rpcNamePort)) //"/follower/worldInterface/rpc"
+    m_worldInterfacePort_ptr = std::make_shared<yarp::os::RpcClient>();
+    if(!m_worldInterfacePort_ptr->open(rpcNamePort)) //"/follower/worldInterface/rpc"
     {
         yError() << "Error opening worldInterface rpc port!!";
         return false;
     }
 
-    gazeFramePainter_ptr = new SimFramePainter("gazeFrame", robotName+"::head_link" , &m_worldInterfacePort );
-    targetFramePainter_ptr = new SimFramePainter("targetFrame", robotName+"::mobile_base_body_link" , &m_worldInterfacePort );
+    gazeFramePainter_ptr = std::make_unique<SimFramePainter>("gazeFrame", robotName+"::head_link" , m_worldInterfacePort_ptr, debugOn);
+    targetFramePainter_ptr = std::make_unique<SimFramePainter>("targetFrame", robotName+"::mobile_base_body_link" , m_worldInterfacePort_ptr, debugOn);
     return true;
 
 }
@@ -39,12 +40,12 @@ bool SimManager::deinit(void)
 {
     gazeFramePainter_ptr->erase();
     targetFramePainter_ptr->erase();
-    SystemClock::delaySystem(0.1); //Do I need it? TODO
-    m_worldInterfacePort.interrupt();
-    m_worldInterfacePort.close();
+   // SystemClock::delaySystem(0.1); //Do I need it? TODO
+    m_worldInterfacePort_ptr->interrupt();
+    m_worldInterfacePort_ptr->close();
 
-    delete gazeFramePainter_ptr;
-    delete targetFramePainter_ptr;
+//     delete gazeFramePainter_ptr;
+//     delete targetFramePainter_ptr;
 
     return true;
 }
@@ -64,7 +65,8 @@ void SimFramePainter::paint(const yarp::sig::Vector &point)
 {
     if( (!m_isCreated) && (m_worldInterfacePort_ptr->asPort().getOutputCount() >0 ))
     {
-        yDebug() << "I'm about to create the target frame...";
+        if(m_debugOn)
+            yDebug() << "I'm about to create the target frame called " << m_nameOfFrame;
         Bottle cmd, ans;
         cmd.clear();
         ans.clear();
@@ -85,7 +87,8 @@ void SimFramePainter::paint(const yarp::sig::Vector &point)
         cmd.addString(m_nameOfFrame); //box obj name
 
         m_worldInterfacePort_ptr->write(cmd, ans);
-        yDebug() << "follower: makeFrame= " << cmd.toString() << "  Ans=" << ans.toString();
+        if(m_debugOn)
+            yDebug() << "follower: makeFrame= " << cmd.toString() << "  Ans=" << ans.toString();
 
         if(ans.toString() == m_nameOfFrame)
         {
@@ -131,7 +134,8 @@ void SimFramePainter::erase(void)
 {
     if((m_isCreated) && (m_worldInterfacePort_ptr->asPort().getOutputCount() >0 ))
     {
-        yDebug() << "I'm about to delete the frame called" << m_nameOfFrame;
+        if(m_debugOn)
+            yDebug() << "I'm about to delete the frame called" << m_nameOfFrame;
         Bottle cmd, ans;
         cmd.clear();
         ans.clear();
@@ -140,6 +144,7 @@ void SimFramePainter::erase(void)
         cmd.addString(m_nameOfFrame); //box obj name
 
         m_worldInterfacePort_ptr->write(cmd, ans);
-        yDebug() << "follower: deleteCmd= " << cmd.toString() << "  Ans=" << ans.toString();
+        if(m_debugOn)
+            yDebug() << "follower: deleteCmd= " << cmd.toString() << "  Ans=" << ans.toString();
     }
 }
