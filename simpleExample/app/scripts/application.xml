@@ -1,0 +1,38 @@
+<application>
+<name>Simple Application example</name>
+
+        <dependencies>
+        </dependencies>
+
+        <!-- <module>
+                <name>joystickCtrl</name>
+                <parameters> --context joystickCtrl --from cer_linux.ini --force_configuration</parameters>
+                <node>console</node>
+        </module> -->
+
+        <module>
+            <name>baseControl</name>
+            <!-- <parameters>--context baseControl_SIM --from robot_2wheels.ini --skip_robot_interface_check --joystick_connect</parameters> -->
+            <parameters>--context baseControl_SIM --from robot_2wheels.ini --skip_robot_interface_check </parameters>
+            <node>console</node>
+        </module>
+        
+        <module>
+            <name>simpleExample</name>
+            <!-- <parameters>--context baseControl_SIM --from robot_2wheels.ini --skip_robot_interface_check --joystick_connect</parameters> -->
+            <parameters>--from simpleExapleCfg.ini </parameters>
+            <node>console</node>
+        </module>
+
+ 
+         <connection>
+                <from>/simpleEx/cmd2BaseCtrl:o</from>
+                <to>/baseControl/aux_control:i</to>
+                <protocol>udp</protocol>
+        </connection>
+
+		
+        
+
+
+</application>
