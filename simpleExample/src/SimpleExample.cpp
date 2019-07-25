@@ -28,7 +28,12 @@ double SimpleExample::getPeriod()
 // This is our main function. Will be called periodically every getPeriod() seconds
 bool SimpleExample::updateModule()
 {
-    //1) move up and down the arm
+
+    //1) send command to the base control
+    sendCommand2BaseControl(0.0, m_linear_vel, 0.0);
+
+
+    //2) move up and down the arm
 
     if(m_posNotReached)
     {
@@ -54,8 +59,6 @@ bool SimpleExample::updateModule()
     }
 
 
-    //2) send command to the base control
-    sendCommand2BaseControl(0.0, m_linear_vel, 0.0);
 
 
     return true;
@@ -160,7 +163,7 @@ bool SimpleExample::configure(yarp::os::ResourceFinder &rf)
 // Interrupt function.
 bool SimpleExample::interruptModule()
 {
-    yError()<<"interrupt\n";
+    yInfo()<<"interrupt\n";
     m_rpcPort.interrupt();
     m_rpcPort.close();
     return true;
@@ -169,7 +172,7 @@ bool SimpleExample::interruptModule()
 bool SimpleExample::close()
 {
     // optional, close port explicitly
-    yError() << "Calling close function\n";
+    yInfo() << "Calling close function\n";
     return true;
 }
 
