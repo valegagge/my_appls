@@ -9,7 +9,7 @@
 #include <stdio.h>
 using namespace yarp::os;
 
-#define CONNECTION_TIMEOUT      2.0
+#define CONNECTION_TIMEOUT     180.0
 
 bool exists(std::string &targetport)
 {
@@ -31,11 +31,11 @@ int main(int argc, char *argv[])
 
     // 1. opening the port
     yarp::os::Port port;
-    port.setTimeout((float)((timeout>0.0) ? timeout : CONNECTION_TIMEOUT));
-    if(!port.open("..."))
+    //port.setTimeout((float)((timeout>0.0) ? timeout : CONNECTION_TIMEOUT));
+    while(!port.open("..."))
     {
         yError() << logName << "Error opening temp port";
-        return -1;
+        SystemClock::delaySystem(1.0);
     }
 
     ContactStyle style;
