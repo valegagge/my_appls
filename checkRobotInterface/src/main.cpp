@@ -1,38 +1,67 @@
+/******************************************************************************
+ *                                                                                                                    *
+ * Copyright (C) 2019 Fondazione Istituto Italiano di Tecnologia (IIT)          *
+ * All Rights Reserved.                                                                                   *
+ *                                                                                                                    *
+ ******************************************************************************/
+
+ 
+
+/**
+ * @file main.cpp
+ * @authors: Valentina Gaggero <valentina.gaggero@iit.it>
+ * 
+ * \brief This application checks if yarprobotinterface is running and if it has created all 
+ * configured devices successfully.
+ * 
+ * checkRobotInterface has two parameters:
+ *   @robot: used to connect to the port /@robot/yarprobotinterface. the default value is icub
+ *   @timeout: [expressed in seconds] If yarprobotinterface is not ready before timeout expires, this application returns error.
+ *             The default value is 180 seconds 
+ *
+ * example of usage: checkRobotInterface --robot icub --timeout 120 
+ */
+
+
+
+
 #include <yarp/os/ResourceFinder.h>
 #include <yarp/os/Network.h>
 #include <yarp/os/SystemClock.h>
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
-
 #include <yarp/os/Port.h>
 
-#include <stdio.h>
+
 using namespace yarp::os;
-
-#define CONNECTION_TIMEOUT     180.0
-
-bool exists(std::string &targetport)
-{
-    ContactStyle style;
-    style.quiet = true;
-    style.timeout = CONNECTION_TIMEOUT;
-    return NetworkBase::exists(targetport, style);
-}
-
 
 int main(int argc, char *argv[])
 {
-    Network yarp;
-    std::string port_robotIntarface="/icub/yarprobotinterface";
-    double timeout=60.0;
-    std::string request="is_ready";
-    std::string reply="[ok]";
-    const std::string logName = "checkRobotInterface: ";
+    const std::string request="is_ready";
+    const std::string reply="[ok]";
+    const std::string logName = "checkRobotInterface:";
+    const double default_conn_timeout = 180.0; //seconds 
+    const std::string default_robotName = "icub";
+    Network yarpNetworkInitializer; //thi object is necessary to init all default sevices of yarp framework
+    
+    // 1. read input parameters
+    ResourceFinder rf;
+    rf.configure(argc, argv);
+    std::string robotName=rf.find("robot").asString();
+    double conn_timeout=rf.find("timeout").asDouble();
+    
+    if(robotName=="")
+        robotName=default_robotName;
+    
+    if(conn_timeout==0.0)
+        conn_timeout=default_conn_timeout;
+    
+    std::string port_robotIntarface="/" + robotName+ "/yarprobotinterface";
 
-    // 1. opening the port
-    yarp::os::Port port;
-    //port.setTimeout((float)((timeout>0.0) ? timeout : CONNECTION_TIMEOUT));
-    while(!port.open("..."))
+    // 2. open the port
+    Port port;
+    double startTime = SystemClock::nowSystem();
+    while(!port.open("...") && (SystemClock::nowSystem() <= startTime+conn_timeout))
     {
         yError() << logName << "Error opening temp port";
         SystemClock::delaySystem(1.0);
@@ -40,23 +69,25 @@ int main(int argc, char *argv[])
 
     ContactStyle style;
     style.quiet = true;
-    style.timeout = (timeout>0.0) ? timeout : CONNECTION_TIMEOUT;
+    style.timeout = 60.0;
     bool ret;
     bool isConnected=false;
     bool responseIsOk=false;
 
-    yInfo() << logName << "starting";
-    double startTime = SystemClock::nowSystem();
-    // 2. loop to check if yarprobot interface is running
-    while(SystemClock::nowSystem() <= startTime+timeout)
+    yInfo() << logName << "starts checking port" << port_robotIntarface << "using timeout of" << conn_timeout << "seconds";
+    
+    // 3. loop to check if yarprobotinterface is running
+    startTime = SystemClock::nowSystem();
+    while(SystemClock::nowSystem() <= startTime+conn_timeout)
     {
         if(!isConnected)
         {
+            yInfo() << logName << " I'm trying to connect to" << port_robotIntarface;
             ret = NetworkBase::connect(port.getName(), port_robotIntarface, style);
             if(ret)
             {
                 isConnected = true;
-                yInfo() << logName << "Connected";
+                yInfo() << logName << "I'm connected to" << port_robotIntarface;
             }
         }
         else //already connected
@@ -69,12 +100,12 @@ int main(int argc, char *argv[])
                 if(response.toString() == reply)
                 {
                     responseIsOk = true;
-                    yInfo() << logName << "Get response OK!!!! " << response.toString();
+                    yInfo() << logName << "Get response OK! yarprobotInteface has started all configured devices correctly";
                     break;
                 }
                 else
                 {
-                    yInfo() << logName << "Get response but not equal " << response.toString();
+                    yInfo() << logName << "Get response: " << response.toString()<< ". yarprobotinterface is not ready...";
                     responseIsOk=false;
                 }
             }
@@ -85,7 +116,9 @@ int main(int argc, char *argv[])
         }
         SystemClock::delaySystem(1.0);
     }//end while
+    
 
+//    NetworkBase::disconnect(port.getName(), port_robotIntarface);
     if(responseIsOk)
         return 0;
     else
