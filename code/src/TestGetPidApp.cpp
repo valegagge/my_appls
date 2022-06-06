@@ -42,7 +42,7 @@ bool TestGetPidApp::updateModule()
 {
     for (auto p : all_parts) 
     {
-        if(bodyPart_pidCtrlDev_map[p]->getPids(yarp::dev::VOCAB_PIDTYPE_POSITION, vectorOfPid))
+        if(!bodyPart_pidCtrlDev_map[p]->getPids(yarp::dev::VOCAB_PIDTYPE_POSITION, vectorOfPid))
         {
             yDebug() << "Error getting pid from " << bodyPart_name_map[p];
         }
@@ -56,7 +56,7 @@ bool TestGetPidApp::addPolyDriver(bodyPart_enum part)
 {
     Property options;
     options.put("device", "remote_controlboard");
-    options.put("remote", "/" + robot_name + "/" + "head");
+    options.put("remote", "/" + robot_name + "/" + bodyPart_name_map[part]);
     options.put("local", "/testGetPidApp/" + robot_name + "/" + bodyPart_name_map[part]);
     yarp::dev::PolyDriver* dd = new yarp::dev::PolyDriver(options);
     if(!dd->isValid())
